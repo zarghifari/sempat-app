@@ -72,6 +72,7 @@ class LessonController extends Controller
             'duration' => $lesson->duration_minutes,
             'module' => $lesson->module->title,
             'course' => $lesson->module->course->title,
+            'course_id' => $lesson->module->course_id,
             'is_preview' => $lesson->is_preview,
             'is_enrolled' => $isEnrolled,
             'is_completed' => $isCompleted,
@@ -79,8 +80,8 @@ class LessonController extends Controller
             'completed_at' => $completion && $completion->completed_at 
                 ? $completion->completed_at->format('d M Y H:i') 
                 : null,
-            'external_links' => json_decode($lesson->external_links, true) ?? [],
-            'attachments' => json_decode($lesson->attachments, true) ?? [],
+            'external_links' => $lesson->external_links ?? [],
+            'attachments' => $lesson->attachments ?? [],
             'previous_lesson' => $previousLesson ? [
                 'id' => $previousLesson->id,
                 'title' => $previousLesson->title,

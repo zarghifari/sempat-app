@@ -137,43 +137,32 @@
                     
                     <!-- Actions -->
                     <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
+                        <!-- View Details -->
+                        <a href="{{ route('learning-goals.show', $goal) }}" 
+                           class="flex-1 text-center py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-semibold hover:bg-purple-100 transition-colors active:scale-95">
+                            View Details & Milestones
+                        </a>
+                        
                         <!-- Update Progress -->
                         @if($goal->status !== 'completed' && $goal->status !== 'abandoned')
                             <button onclick="openProgressModal({{ $goal->id }}, {{ $goal->progress_percentage }})"  
-                                    class="flex-1 text-center py-2 bg-purple-50 text-gray-600 rounded-lg text-sm font-semibold hover:bg-purple-100 transition-colors active:scale-95">
-                                Update Progress
+                                    class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors active:scale-95">
+                                Progress
                             </button>
                         @endif
                         
                         <!-- Mark Complete -->
                         @if($goal->status !== 'completed')
-                            <form action="{{ route('learning-goals.update-status', $goal) }}" method="POST" class="flex-1">
+                            <form action="{{ route('learning-goals.update-status', $goal) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="completed">
                                 <button type="submit" 
-                                        class="w-full py-2 bg-green-50 text-green-600 rounded-lg text-sm font-semibold hover:bg-green-100 transition-colors active:scale-95">
-                                    Mark Complete
+                                        class="px-4 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-semibold hover:bg-green-100 transition-colors active:scale-95">
+                                    ✓
                                 </button>
                             </form>
                         @endif
-                        
-                        <!-- Edit -->
-                        <button onclick="openEditGoalModal({{ json_encode($goal) }})" 
-                                class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm transition-colors active:scale-95">
-                            Edit
-                        </button>
-                        
-                        <!-- Delete -->
-                        <form action="{{ route('learning-goals.destroy', $goal) }}" method="POST" 
-                              onsubmit="return confirm('Are you sure you want to delete this goal?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" 
-                                    class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm transition-colors active:scale-95">
-                                Delete
-                            </button>
-                        </form>
                     </div>
                 </div>
                 @endforeach
@@ -239,6 +228,69 @@
                             <input type="date" name="target_date" id="goalTargetDate"
                                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                    min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                        </div>
+
+                        <!-- Daily Study Target (Optional) -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <label class="flex items-center gap-2 mb-3">
+                                <input type="checkbox" id="enableDailyTarget" class="rounded" onchange="toggleDailyTarget()">
+                                <span class="text-sm font-medium text-gray-700">⏱️ Set Daily Study Target</span>
+                            </label>
+                            <div id="dailyTargetFields" class="hidden space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Minutes/Day</label>
+                                        <input type="number" name="daily_target_minutes" id="dailyTargetMinutes" min="1"
+                                               placeholder="30"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Total Days</label>
+                                        <input type="number" name="target_days" id="targetDays" min="1"
+                                               placeholder="90"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500">Auto-tracked dari journal entries</p>
+                            </div>
+                        </div>
+
+                        <!-- Milestones Builder -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-sm font-medium text-gray-700">🎯 Milestones (Optional)</label>
+                                <button type="button" onclick="addMilestone()" 
+                                        class="text-sm text-purple-600 font-medium hover:text-purple-700">
+                                    + Add Milestone
+                                </button>
+                            </div>
+                            <div id="milestonesContainer" class="space-y-2">
+                                <!-- Milestones will be added here dynamically -->
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Tambahkan checkpoint untuk track progress (4-6 milestone disarankan)</p>
+                        </div>
+
+                        <!-- Final Project Info (Optional) -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <label class="flex items-center gap-2 mb-3">
+                                <input type="checkbox" id="enableFinalProject" class="rounded" onchange="toggleFinalProject()">
+                                <span class="text-sm font-medium text-gray-700">📁 Plan Final Project</span>
+                            </label>
+                            <div id="finalProjectFields" class="hidden space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Project Title</label>
+                                    <input type="text" name="final_project_title" id="finalProjectTitle"
+                                           placeholder="e.g., Portfolio Website"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Project Description</label>
+                                    <textarea name="final_project_description" id="finalProjectDescription" rows="2"
+                                              placeholder="Describe your final project..."
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"></textarea>
+                                </div>
+                                <p class="text-xs text-gray-500">File dan URL bisa diupload nanti saat submit project</p>
+                            </div>
                         </div>
                         
                         <!-- Status (only for edit) -->
@@ -369,6 +421,87 @@
         document.getElementById('progressModal').addEventListener('click', function(e) {
             if (e.target === this) closeProgressModal();
         });
+
+        // Daily Target Toggle
+        function toggleDailyTarget() {
+            const checkbox = document.getElementById('enableDailyTarget');
+            const fields = document.getElementById('dailyTargetFields');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                document.getElementById('dailyTargetMinutes').required = true;
+                document.getElementById('targetDays').required = true;
+            } else {
+                fields.classList.add('hidden');
+                document.getElementById('dailyTargetMinutes').required = false;
+                document.getElementById('targetDays').required = false;
+                document.getElementById('dailyTargetMinutes').value = '';
+                document.getElementById('targetDays').value = '';
+            }
+        }
+
+        // Final Project Toggle
+        function toggleFinalProject() {
+            const checkbox = document.getElementById('enableFinalProject');
+            const fields = document.getElementById('finalProjectFields');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+            } else {
+                fields.classList.add('hidden');
+                document.getElementById('finalProjectTitle').value = '';
+                document.getElementById('finalProjectDescription').value = '';
+            }
+        }
+
+        // Milestone Builder
+        let milestoneCount = 0;
+
+        function addMilestone() {
+            milestoneCount++;
+            const container = document.getElementById('milestonesContainer');
+            
+            const milestoneHTML = `
+                <div id="milestone-${milestoneCount}" class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-start gap-2">
+                        <div class="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-bold mt-2">
+                            ${milestoneCount}
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <input type="text" 
+                                   name="milestones[${milestoneCount - 1}][title]" 
+                                   placeholder="Milestone title (required)"
+                                   required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
+                            <textarea name="milestones[${milestoneCount - 1}][description]" 
+                                      rows="2"
+                                      placeholder="Description (optional)"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm"></textarea>
+                            <label class="flex items-center gap-2 text-xs text-gray-600">
+                                <input type="checkbox" 
+                                       name="milestones[${milestoneCount - 1}][requires_evidence]" 
+                                       value="1"
+                                       class="rounded">
+                                <span>📎 Membutuhkan bukti capaian (text/file)</span>
+                            </label>
+                        </div>
+                        <button type="button" 
+                                onclick="removeMilestone(${milestoneCount})"
+                                class="flex-shrink-0 text-red-500 hover:text-red-700 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', milestoneHTML);
+        }
+
+        function removeMilestone(id) {
+            document.getElementById(`milestone-${id}`).remove();
+        }
     </script>
 </div>
 @endsection

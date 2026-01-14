@@ -99,6 +99,12 @@
                     class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium text-center active:scale-98 transition">
                     Selanjutnya →
                 </a>
+            @else
+                {{-- Tombol kembali ke course jika ini lesson terakhir --}}
+                <a href="{{ route('courses.show', $lesson['course_id']) }}"
+                    class="flex-1 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-medium text-center active:scale-98 transition">
+                    🏠 Kembali ke Course
+                </a>
             @endif
         </div>
 

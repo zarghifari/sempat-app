@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             ArticleSeeder::class,
             StickerSeeder::class,
             ArticleCommentSeeder::class,
+            LearningGoalSeeder::class,
         ]);
 
         $this->command->info('');
@@ -52,6 +53,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('  10 Published Articles');
         $this->command->info('  26 Stickers (reactions, emotions, memes)');
         $this->command->info('  Comments & Likes on Articles');
+        $this->command->info('  6 Learning Goals (active, completed, abandoned)');
         $this->command->info('==================================');
     }
 }

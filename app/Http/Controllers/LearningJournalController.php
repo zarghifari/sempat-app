@@ -62,6 +62,14 @@ class LearningJournalController extends Controller
         
         $journal = LearningJournal::create($validated);
         
+        // Auto-update learning goal if linked
+        if ($journal->learning_goal_id) {
+            $goal = LearningGoal::find($journal->learning_goal_id);
+            if ($goal) {
+                $goal->updateStudyStats();
+            }
+        }
+        
         return redirect()->route('learning-journal.index')
             ->with('success', 'Journal entry created successfully!');
     }
@@ -92,6 +100,14 @@ class LearningJournalController extends Controller
         ]);
         
         $learningJournal->update($validated);
+        
+        // Auto-update learning goal if linked
+        if ($learningJournal->learning_goal_id) {
+            $goal = LearningGoal::find($learningJournal->learning_goal_id);
+            if ($goal) {
+                $goal->updateStudyStats();
+            }
+        }
         
         return back()->with('success', 'Journal entry updated successfully!');
     }

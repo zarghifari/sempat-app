@@ -175,11 +175,16 @@ Route::middleware('auth')->group(function () {
     
     // Learning Goals Routes
     Route::get('/learning-goals', [LearningGoalController::class, 'index'])->name('learning-goals.index');
+    Route::get('/learning-goals/{learningGoal}', [LearningGoalController::class, 'show'])->name('learning-goals.show');
     Route::post('/learning-goals', [LearningGoalController::class, 'store'])->name('learning-goals.store');
     Route::put('/learning-goals/{learningGoal}', [LearningGoalController::class, 'update'])->name('learning-goals.update');
     Route::patch('/learning-goals/{learningGoal}/status', [LearningGoalController::class, 'updateStatus'])->name('learning-goals.update-status');
     Route::patch('/learning-goals/{learningGoal}/progress', [LearningGoalController::class, 'updateProgress'])->name('learning-goals.update-progress');
     Route::delete('/learning-goals/{learningGoal}', [LearningGoalController::class, 'destroy'])->name('learning-goals.destroy');
+    
+    // Learning Goal Milestones Routes
+    Route::patch('/milestones/{milestone}/toggle', [LearningGoalController::class, 'toggleMilestone'])->name('milestones.toggle');
+    Route::post('/learning-goals/{learningGoal}/final-project', [LearningGoalController::class, 'storeFinalProject'])->name('learning-goals.final-project');
     
     // Learning Journal Routes
     Route::get('/learning-journal', [LearningJournalController::class, 'index'])->name('learning-journal.index');
