@@ -18,6 +18,9 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
+    <!-- Study Timer Script -->
+    <script src="{{ asset('js/study-timer.js') }}"></script>
+    
     <style>
         * {
             -webkit-tap-highlight-color: transparent;
@@ -61,6 +64,15 @@
                 <!-- Right: Actions -->
                 <div class="flex items-center space-x-2">
                     @auth
+                        <!-- Global Timer Display -->
+                        <div id="globalTimerDisplay" class="hidden">
+                            <a href="#" id="globalTimerLink" 
+                               class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full text-sm font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95">
+                                <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                                <span id="globalTimerText">00:00</span>
+                            </a>
+                        </div>
+
                         <!-- Notifications -->
                         <button class="p-2 rounded-lg active:bg-gray-100 relative text-gray-700">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,5 +157,96 @@
         </nav>
         @endauth
     </div>
+
+    <!-- Global Timer Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const globalTimerDisplay = document.getElementById('globalTimerDisplay');
+        const globalTimerText = document.getElementById('globalTimerText');
+        const globalTimerLink = document.getElementById('globalTimerLink');
+        
+        let currentGoalUrl = null;
+
+        // Listen to timer updates
+        window.addEventListener('studyTimer:update', function(e) {
+            const data = e.detail;
+            if (data.isRunning) {
+                globalTimerDisplay.classList.remove('hidden');
+                globalTimerText.textContent = data.formattedTime;
+                
+                // Update link to current goal
+                if (data.goalId) {
+                    currentGoalUrl = `/learning-goals/${data.goalId}`;
+                    globalTimerLink.href = currentGoalUrl;
+                }
+            }
+        });
+
+        window.addEventListener('studyTimer:started', function(e) {
+            globalTimerDisplay.classList.remove('hidden');
+            if (e.detail.goalId) {
+                currentGoalUrl = `/learning-goals/${e.detail.goalId}`;
+                globalTimerLink.href = currentGoalUrl;
+            }
+        });
+
+        window.addEventListener('studyTimer:paused', function(e) {
+            // Keep showing timer when paused
+            if (globalTimerText.textContent !== '00:00') {
+                globalTimerDisplay.classList.remove('hidden');
+            }
+        });
+
+        window.addEventListener('studyTimer:stopped', function(e) {
+            globalTimerDisplay.classList.add('hidden');
+            globalTimerText.textContent = '00:00';
+            currentGoalUrl = null;
+            
+            // Clear the interval
+            if (window.globalTimerInterval) {
+                clearInterval(window.globalTimerInterval);
+                window.globalTimerInterval = null;
+            }
+        });
+
+        // Check if there's an active timer in localStorage on page load
+        const storedTimer = localStorage.getItem('study_timer');
+        if (storedTimer) {
+            try {
+                const timerState = JSON.parse(storedTimer);
+                if (timerState.is_running && timerState.goal_id) {
+                    // Show timer immediately
+                    globalTimerDisplay.classList.remove('hidden');
+                    currentGoalUrl = `/learning-goals/${timerState.goal_id}`;
+                    globalTimerLink.href = currentGoalUrl;
+                    
+                    // Update timer every second
+                    function updateGlobalTimer() {
+                        const stored = localStorage.getItem('study_timer');
+                        if (stored) {
+                            const state = JSON.parse(stored);
+                            if (state.is_running) {
+                                const now = Date.now();
+                                const startTime = new Date(state.start_time).getTime();
+                                const totalSeconds = state.elapsed_seconds + Math.floor((now - startTime) / 1000);
+                                const mins = Math.floor(totalSeconds / 60);
+                                const secs = totalSeconds % 60;
+                                globalTimerText.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                            }
+                        }
+                    }
+                    
+                    // Initial update
+                    updateGlobalTimer();
+                    
+                    // Update every second
+                    window.globalTimerInterval = setInterval(updateGlobalTimer, 1000);
+                }
+            } catch (e) {
+                console.error('Error loading timer state:', e);
+            }
+        }
+    });
+    </script>
 </body>
 </html>

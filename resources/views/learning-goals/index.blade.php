@@ -122,18 +122,16 @@
                     </div>
 
                     <!-- Progress Bar -->
-                    @if($goal->progress_percentage > 0)
-                        <div class="mb-3">
-                            <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
-                                <span>Progress</span>
-                                <span class="font-semibold">{{ $goal->progress_percentage }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full transition-all" 
-                                     style="width: {{ $goal->progress_percentage }}%"></div>
-                            </div>
+                    <div class="mb-3">
+                        <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span class="font-semibold">{{ $goal->progress_percentage ?? 0 }}%</span>
                         </div>
-                    @endif
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all" 
+                                 style="width: {{ $goal->progress_percentage ?? 0 }}%"></div>
+                        </div>
+                    </div>
                     
                     <!-- Actions -->
                     <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -142,14 +140,6 @@
                            class="flex-1 text-center py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-semibold hover:bg-purple-100 transition-colors active:scale-95">
                             View Details & Milestones
                         </a>
-                        
-                        <!-- Update Progress -->
-                        @if($goal->status !== 'completed' && $goal->status !== 'abandoned')
-                            <button onclick="openProgressModal({{ $goal->id }}, {{ $goal->progress_percentage }})"  
-                                    class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors active:scale-95">
-                                Progress
-                            </button>
-                        @endif
                         
                         <!-- Mark Complete -->
                         @if($goal->status !== 'completed')
@@ -270,13 +260,33 @@
                             <p class="text-xs text-gray-500 mt-2">Tambahkan checkpoint untuk track progress (4-6 milestone disarankan)</p>
                         </div>
 
-                        <!-- Final Project Info (Optional) -->
+                        <!-- Final Completion (Required) -->
                         <div class="border-t border-gray-200 pt-4">
-                            <label class="flex items-center gap-2 mb-3">
-                                <input type="checkbox" id="enableFinalProject" class="rounded" onchange="toggleFinalProject()">
-                                <span class="text-sm font-medium text-gray-700">📁 Plan Final Project</span>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                🎓 Final Completion (Required - Choose One)
                             </label>
-                            <div id="finalProjectFields" class="hidden space-y-3">
+                            <div class="space-y-3">
+                                <!-- Option 1: Final Project -->
+                                <label class="flex items-start gap-3 p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-400 transition-all has-[:checked]:border-purple-600 has-[:checked]:bg-purple-50">
+                                    <input type="radio" name="completion_type" value="final_project" class="mt-1" required onchange="toggleCompletionType('final_project')">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-800 mb-1">📁 Final Project</div>
+                                        <p class="text-xs text-gray-600">Create a tangible project (portfolio, app, presentation, etc.)</p>
+                                    </div>
+                                </label>
+                                
+                                <!-- Option 2: Final Assessment -->
+                                <label class="flex items-start gap-3 p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-400 transition-all has-[:checked]:border-purple-600 has-[:checked]:bg-purple-50">
+                                    <input type="radio" name="completion_type" value="final_assessment" class="mt-1" required onchange="toggleCompletionType('final_assessment')">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-800 mb-1">📝 Final Assessment</div>
+                                        <p class="text-xs text-gray-600">Reflection questionnaire (SPSDL principle)</p>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Final Project Fields -->
+                            <div id="finalProjectFields" class="hidden mt-4 space-y-3 p-4 bg-purple-50 rounded-lg">
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Project Title</label>
                                     <input type="text" name="final_project_title" id="finalProjectTitle"
@@ -291,6 +301,19 @@
                                 </div>
                                 <p class="text-xs text-gray-500">File dan URL bisa diupload nanti saat submit project</p>
                             </div>
+                            
+                            <!-- Final Assessment Info -->
+                            <div id="finalAssessmentInfo" class="hidden mt-4 p-4 bg-blue-50 rounded-lg">
+                                <p class="text-xs text-gray-600">
+                                    Anda akan menjawab 4 pertanyaan refleksi saat menyelesaikan goal:
+                                </p>
+                                <ul class="text-xs text-gray-600 mt-2 space-y-1 list-disc list-inside">
+                                    <li>Apa yang telah Anda pelajari?</li>
+                                    <li>Bagaimana Anda akan mengaplikasikannya?</li>
+                                    <li>Tantangan yang dihadapi dan solusinya</li>
+                                    <li>Langkah selanjutnya dalam pembelajaran</li>
+                                </ul>
+                            </div>
                         </div>
                         
                         <!-- Status (only for edit) -->
@@ -302,13 +325,6 @@
                                 <option value="completed">Completed</option>
                                 <option value="abandoned">Abandoned</option>
                             </select>
-                        </div>
-                        
-                        <!-- Progress (only for edit) -->
-                        <div id="progressField" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Progress (%)</label>
-                            <input type="number" name="progress_percentage" id="goalProgress" min="0" max="100"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                         </div>
                     </div>
                     
@@ -328,42 +344,7 @@
         </div>
     </div>
 
-    <!-- Progress Update Modal -->
-    <div id="progressModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full">
-            <form id="progressForm" method="POST">
-                @csrf
-                @method('PATCH')
-                
-                <div class="p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Update Progress</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Progress (%)</label>
-                            <input type="range" name="progress_percentage" id="progressSlider" min="0" max="100" value="0"
-                                   class="w-full"
-                                   oninput="document.getElementById('progressValue').textContent = this.value + '%'">
-                            <div class="text-center mt-2">
-                                <span id="progressValue" class="text-2xl font-bold text-gray-600">0%</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-3 mt-6">
-                        <button type="button" onclick="closeProgressModal()"
-                                class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors active:scale-95">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="flex-1 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-black rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95">
-                            Update
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+
 
     <script>
         function openCreateGoalModal() {
@@ -371,7 +352,6 @@
             document.getElementById('goalForm').action = '{{ route('learning-goals.store') }}';
             document.getElementById('methodField').innerHTML = '';
             document.getElementById('statusField').classList.add('hidden');
-            document.getElementById('progressField').classList.add('hidden');
             
             // Reset form
             document.getElementById('goalForm').reset();
@@ -384,7 +364,6 @@
             document.getElementById('goalForm').action = `/learning-goals/${goal.id}`;
             document.getElementById('methodField').innerHTML = '@method("PUT")';
             document.getElementById('statusField').classList.remove('hidden');
-            document.getElementById('progressField').classList.remove('hidden');
             
             // Populate form
             document.getElementById('goalTitle').value = goal.title;
@@ -393,7 +372,6 @@
             document.getElementById('goalPriority').value = goal.priority;
             document.getElementById('goalTargetDate').value = goal.target_date || '';
             document.getElementById('goalStatus').value = goal.status;
-            document.getElementById('goalProgress').value = goal.progress_percentage || 0;
             
             document.getElementById('goalModal').classList.remove('hidden');
         }
@@ -402,24 +380,9 @@
             document.getElementById('goalModal').classList.add('hidden');
         }
         
-        function openProgressModal(goalId, currentProgress) {
-            document.getElementById('progressForm').action = `/learning-goals/${goalId}/progress`;
-            document.getElementById('progressSlider').value = currentProgress;
-            document.getElementById('progressValue').textContent = currentProgress + '%';
-            document.getElementById('progressModal').classList.remove('hidden');
-        }
-        
-        function closeProgressModal() {
-            document.getElementById('progressModal').classList.add('hidden');
-        }
-        
         // Close modals on outside click
         document.getElementById('goalModal').addEventListener('click', function(e) {
             if (e.target === this) closeGoalModal();
-        });
-        
-        document.getElementById('progressModal').addEventListener('click', function(e) {
-            if (e.target === this) closeProgressModal();
         });
 
         // Daily Target Toggle
@@ -451,6 +414,20 @@
                 fields.classList.add('hidden');
                 document.getElementById('finalProjectTitle').value = '';
                 document.getElementById('finalProjectDescription').value = '';
+            }
+        }
+
+        // Completion Type Toggle
+        function toggleCompletionType(type) {
+            const projectFields = document.getElementById('finalProjectFields');
+            const assessmentInfo = document.getElementById('finalAssessmentInfo');
+            
+            if (type === 'final_project') {
+                projectFields.classList.remove('hidden');
+                assessmentInfo.classList.add('hidden');
+            } else if (type === 'final_assessment') {
+                projectFields.classList.add('hidden');
+                assessmentInfo.classList.remove('hidden');
             }
         }
 

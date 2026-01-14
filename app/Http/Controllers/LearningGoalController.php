@@ -43,6 +43,7 @@ class LearningGoalController extends Controller
             'target_date' => 'nullable|date|after:today',
             'daily_target_minutes' => 'nullable|integer|min:1',
             'target_days' => 'nullable|integer|min:1',
+            'completion_type' => 'required|in:final_project,final_assessment',
             'final_project_title' => 'nullable|string|max:255',
             'final_project_description' => 'nullable|string',
             'milestones' => 'nullable|array',
@@ -68,6 +69,9 @@ class LearningGoalController extends Controller
             }
         }
         
+        // Calculate initial progress based on daily targets, milestones, and final completion
+        $goal->recalculateProgress();
+        
         return redirect()->route('learning-goals.index')
             ->with('success', 'Learning goal created successfully!');
     }
@@ -89,10 +93,13 @@ class LearningGoalController extends Controller
             'priority' => 'required|in:low,medium,high',
             'status' => 'required|in:active,completed,abandoned',
             'target_date' => 'nullable|date',
-            'progress_percentage' => 'nullable|integer|min:0|max:100',
+            // progress_percentage is auto-calculated, not editable
         ]);
         
         $learningGoal->update($validated);
+        
+        // Recalculate progress to ensure accuracy
+        $learningGoal->recalculateProgress();
         
         return redirect()->route('learning-goals.index')
             ->with('success', 'Learning goal updated successfully!');
@@ -119,10 +126,22 @@ class LearningGoalController extends Controller
 
     /**
      * Update goal progress
+     * @deprecated This method is no longer used. Progress is now automatically calculated
+     * from daily targets, milestones, and final completion (project/assessment).
+     * See LearningGoal::recalculateProgress() method.
      */
     public function updateProgress(Request $request, LearningGoal $learningGoal)
     {
-        // Ensure user owns this goal
+        // This method is deprecated but kept for backward compatibility
+        // Progress is now automatically calculated based on:
+        // - Daily target completion (40% weight)
+        // - Milestones completion (40% weight)  
+        // - Final completion - project or assessment (20% weight)
+        
+        return redirect()->route('learning-goals.index')
+            ->with('info', 'Progress is now calculated automatically based on your daily targets, milestones, and final completion.');
+        
+        /* Original code removed - manual progress updates no longer supported
         if ($learningGoal->user_id !== Auth::id()) {
             abort(403);
         }
@@ -139,8 +158,9 @@ class LearningGoalController extends Controller
         } elseif ($learningGoal->progress_percentage > 0 && $learningGoal->status !== 'completed') {
             $learningGoal->update(['status' => 'active']);
         }
+        */
         
-        return back()->with('success', 'Progress updated!');
+        return back()->with('info', 'Progress is now calculated automatically based on your daily targets, milestones, and final completion.');
     }
 
     /**
@@ -243,7 +263,45 @@ class LearningGoalController extends Controller
 
         $validated['final_project_submitted_at'] = now();
         $learningGoal->update($validated);
+        
+        // Recalculate progress
+        $learningGoal->recalculateProgress();
 
         return back()->with('success', 'Final project submitted successfully! 🎉');
+    }
+    
+    /**
+     * Submit final assessment
+     */
+    public function submitAssessment(Request $request, LearningGoal $learningGoal)
+    {
+        // Ensure user owns this goal
+        if ($learningGoal->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'assessment_what_learned' => 'required|string',
+            'assessment_how_applied' => 'required|string',
+            'assessment_challenges' => 'required|string',
+            'assessment_next_steps' => 'required|string',
+        ]);
+
+        $validated['assessment_submitted_at'] = now();
+        $learningGoal->update($validated);
+        
+        // Recalculate progress
+        $learningGoal->recalculateProgress();
+        
+        // Check if goal is fully completed
+        if ($learningGoal->isFullyCompleted()) {
+            $learningGoal->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
+            return back()->with('success', 'Congratulations! You have completed this learning goal! 🎉🎊');
+        }
+
+        return back()->with('success', 'Assessment submitted successfully! 🎉');
     }
 }

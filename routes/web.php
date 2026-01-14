@@ -179,12 +179,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/learning-goals', [LearningGoalController::class, 'store'])->name('learning-goals.store');
     Route::put('/learning-goals/{learningGoal}', [LearningGoalController::class, 'update'])->name('learning-goals.update');
     Route::patch('/learning-goals/{learningGoal}/status', [LearningGoalController::class, 'updateStatus'])->name('learning-goals.update-status');
-    Route::patch('/learning-goals/{learningGoal}/progress', [LearningGoalController::class, 'updateProgress'])->name('learning-goals.update-progress');
+    // Progress is now auto-calculated from daily targets, milestones, and final completion
+    // Route::patch('/learning-goals/{learningGoal}/progress', [LearningGoalController::class, 'updateProgress'])->name('learning-goals.update-progress');
     Route::delete('/learning-goals/{learningGoal}', [LearningGoalController::class, 'destroy'])->name('learning-goals.destroy');
     
     // Learning Goal Milestones Routes
     Route::patch('/milestones/{milestone}/toggle', [LearningGoalController::class, 'toggleMilestone'])->name('milestones.toggle');
     Route::post('/learning-goals/{learningGoal}/final-project', [LearningGoalController::class, 'storeFinalProject'])->name('learning-goals.final-project');
+    Route::post('/learning-goals/{learningGoal}/submit-assessment', [LearningGoalController::class, 'submitAssessment'])->name('learning-goals.submit-assessment');
+    
+    // Study Timer Routes
+    Route::post('/study-timer/save', [App\Http\Controllers\StudyTimerController::class, 'save'])->name('study-timer.save');
+    Route::get('/study-timer/status/{goalId}', [App\Http\Controllers\StudyTimerController::class, 'getStatus'])->name('study-timer.status');
+    Route::get('/study-timer/logs/{goalId}', [App\Http\Controllers\StudyTimerController::class, 'getLogs'])->name('study-timer.logs');
     
     // Learning Journal Routes
     Route::get('/learning-journal', [LearningJournalController::class, 'index'])->name('learning-journal.index');

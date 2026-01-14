@@ -42,18 +42,17 @@ class DatabaseSeeder extends Seeder
         $this->command->info('==================================');
         $this->command->info('FSDL Data:');
         $this->command->info('  6 Course Categories');
-        $this->command->info('  6 Courses with modules & lessons');
-        $this->command->info('  Including: Komputer Grafis (imported from HTML)');
-        $this->command->info('  3 Quizzes with 16 questions (HTML, CSS, JavaScript)');
-        $this->command->info('  Student enrolled in 3 courses');
+        $this->command->info('  3 Courses with modules & lessons');
+        $this->command->info('  3 Quizzes (HTML, CSS, JavaScript)');
+        $this->command->info('  Student enrolled in 2 courses');
         $this->command->info('==================================');
         $this->command->info('SPSDL Data:');
         $this->command->info('  6 Article Categories');
-        $this->command->info('  15 Tags');
-        $this->command->info('  10 Published Articles');
+        $this->command->info('  8 Tags');
+        $this->command->info('  3 Published Articles');
         $this->command->info('  26 Stickers (reactions, emotions, memes)');
-        $this->command->info('  Comments & Likes on Articles');
-        $this->command->info('  6 Learning Goals (active, completed, abandoned)');
+        $this->command->info('  Comments & Likes on 3 Articles');
+        $this->command->info('  3 Learning Goals (active, completed)');
         $this->command->info('==================================');
     }
 }

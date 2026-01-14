@@ -65,9 +65,9 @@ class ArticleCommentSeeder extends Seeder
             'Noted, akan saya perbaiki',
         ];
 
-        foreach ($articles as $article) {
-            // Random number of comments per article (3-8)
-            $commentCount = rand(3, 8);
+        foreach ($articles->take(3) as $article) {
+            // Random number of comments per article (2-4)
+            $commentCount = rand(2, 4);
             
             for ($i = 0; $i < $commentCount; $i++) {
                 $student = $students->random();
@@ -80,7 +80,7 @@ class ArticleCommentSeeder extends Seeder
                         'article_id' => $article->id,
                         'user_id' => $student->id,
                         'content' => $commentTexts[array_rand($commentTexts)],
-                        'created_at' => now()->subDays(rand(0, 10))->subHours(rand(0, 23)),
+                        'created_at' => now()->subDays(rand(0, 5))->subHours(rand(0, 23)),
                     ]);
                 } else {
                     $sticker = $stickers->random();
@@ -88,15 +88,15 @@ class ArticleCommentSeeder extends Seeder
                         'article_id' => $article->id,
                         'user_id' => $student->id,
                         'sticker_id' => $sticker->id,
-                        'created_at' => now()->subDays(rand(0, 10))->subHours(rand(0, 23)),
+                        'created_at' => now()->subDays(rand(0, 5))->subHours(rand(0, 23)),
                     ]);
                     
                     // Increment sticker usage
                     $sticker->incrementUsage();
                 }
 
-                // 40% chance of having a reply
-                if (rand(1, 100) <= 40 && $students->count() > 1) {
+                // 30% chance of having a reply
+                if (rand(1, 100) <= 30 && $students->count() > 1) {
                     $otherStudents = $students->where('id', '!=', $student->id);
                     if ($otherStudents->isNotEmpty()) {
                         $replier = $otherStudents->random();
@@ -133,10 +133,10 @@ class ArticleCommentSeeder extends Seeder
             // Update article comments count
             $article->update(['comments_count' => $article->allComments()->count()]);
 
-            // Add random likes to article (30-70% of students)
-            $likeCount = rand((int)($students->count() * 0.3), (int)($students->count() * 0.7));
+            // Add random likes to article (20-40% of students)
+            $likeCount = rand((int)($students->count() * 0.2), (int)($students->count() * 0.4));
             if ($likeCount > 0) {
-                $likers = $students->random($likeCount);
+                $likers = $students->random(min($likeCount, $students->count()));
             } else {
                 $likers = collect();
             }
@@ -145,7 +145,7 @@ class ArticleCommentSeeder extends Seeder
                 ArticleLike::create([
                     'article_id' => $article->id,
                     'user_id' => $liker->id,
-                    'created_at' => now()->subDays(rand(0, 10))->subHours(rand(0, 23)),
+                    'created_at' => now()->subDays(rand(0, 5))->subHours(rand(0, 23)),
                 ]);
             }
 
@@ -153,6 +153,6 @@ class ArticleCommentSeeder extends Seeder
             $article->update(['likes_count' => $article->likes()->count()]);
         }
 
-        $this->command->info('Created comments and likes for ' . $articles->count() . ' articles');
+        $this->command->info('✓ Created comments and likes for 3 articles');
     }
 }

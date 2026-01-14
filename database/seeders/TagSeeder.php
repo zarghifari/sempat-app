@@ -16,15 +16,8 @@ class TagSeeder extends Seeder
             ['name' => 'Pemula', 'color' => 'purple'],
             ['name' => 'Advanced', 'color' => 'red'],
             ['name' => 'Praktis', 'color' => 'pink'],
-            ['name' => 'Teori', 'color' => 'indigo'],
             ['name' => 'Studi Kasus', 'color' => 'orange'],
-            ['name' => 'Inspirasi', 'color' => 'teal'],
             ['name' => 'Produktivitas', 'color' => 'cyan'],
-            ['name' => 'Motivasi', 'color' => 'emerald'],
-            ['name' => 'Teknologi', 'color' => 'blue'],
-            ['name' => 'Coding', 'color' => 'slate'],
-            ['name' => 'Desain', 'color' => 'pink'],
-            ['name' => 'Karir', 'color' => 'amber'],
         ];
 
         foreach ($tags as $tag) {

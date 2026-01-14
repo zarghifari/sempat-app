@@ -86,49 +86,7 @@ class CourseSeeder extends Seeder
                 'published_at' => now()->subDays(15),
                 'category' => $bahasa,
             ],
-            [
-                'title' => 'Dasar-dasar Kewirausahaan',
-                'description' => 'Pelajari langkah-langkah memulai bisnis dari nol, mulai dari ide bisnis, riset pasar, hingga strategi pemasaran. Dilengkapi dengan studi kasus nyata.',
-                'objectives' => [
-                    'Mampu mengidentifikasi peluang bisnis',
-                    'Membuat business plan sederhana',
-                    'Memahami dasar marketing dan branding',
-                    'Mengelola keuangan bisnis kecil'
-                ],
-                'prerequisites' => ['Minat dalam berwirausaha'],
-                'level' => 'beginner',
-                'status' => 'published',
-                'language' => 'id',
-                'estimated_hours' => 18,
-                'is_free' => true,
-                'is_featured' => false,
-                'max_students' => 100,
-                'created_by' => $teacher2->id,
-                'published_at' => now()->subDays(10),
-                'category' => $bisnis,
-            ],
-            [
-                'title' => 'Manajemen Waktu dan Produktivitas',
-                'description' => 'Tingkatkan produktivitas dengan teknik manajemen waktu yang terbukti efektif. Pelajari cara menetapkan prioritas, menghilangkan prokrastinasi, dan mencapai work-life balance.',
-                'objectives' => [
-                    'Menguasai teknik time blocking dan Pomodoro',
-                    'Mampu menetapkan prioritas dengan metode Eisenhower',
-                    'Mengatasi prokrastinasi dan distraksi',
-                    'Membangun kebiasaan produktif jangka panjang'
-                ],
-                'prerequisites' => ['Keinginan untuk berubah lebih baik'],
-                'level' => 'beginner',
-                'status' => 'published',
-                'language' => 'id',
-                'estimated_hours' => 15,
-                'price' => 199000,
-                'is_free' => false,
-                'is_featured' => false,
-                'max_students' => 150,
-                'created_by' => $teacher1->id,
-                'published_at' => now()->subDays(5),
-                'category' => $pengembangan,
-            ],
+
         ];
 
         foreach ($courses as $courseData) {

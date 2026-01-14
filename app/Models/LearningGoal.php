@@ -28,6 +28,12 @@ class LearningGoal extends Model
         'final_project_url',
         'final_project_file',
         'final_project_submitted_at',
+        'completion_type',
+        'assessment_what_learned',
+        'assessment_how_applied',
+        'assessment_challenges',
+        'assessment_next_steps',
+        'assessment_submitted_at',
     ];
 
     protected $casts = [
@@ -35,6 +41,7 @@ class LearningGoal extends Model
         'completed_at' => 'date',
         'related_article_ids' => 'array',
         'final_project_submitted_at' => 'datetime',
+        'assessment_submitted_at' => 'datetime',
     ];
 
     // Relationships
@@ -67,18 +74,57 @@ class LearningGoal extends Model
     // Helper Methods
     
     /**
-     * Recalculate progress based on milestones
+     * Recalculate progress based on all components
+     * Progress = weighted average of:
+     * - Daily target (if enabled): 40%
+     * - Milestones: 40%
+     * - Final completion (project/assessment): 20%
      */
     public function recalculateProgress()
     {
-        $totalMilestones = $this->milestones()->count();
+        $components = [];
+        $weights = [];
         
-        if ($totalMilestones === 0) {
-            return;
+        // Component 1: Daily Target Progress (if enabled)
+        if ($this->daily_target_minutes && $this->target_days) {
+            $dailyProgress = min(100, ($this->days_completed / $this->target_days) * 100);
+            $components[] = $dailyProgress;
+            $weights[] = 40;
         }
-
-        $completedMilestones = $this->milestones()->where('is_completed', true)->count();
-        $this->progress_percentage = ($completedMilestones / $totalMilestones) * 100;
+        
+        // Component 2: Milestones Progress
+        $totalMilestones = $this->milestones()->count();
+        if ($totalMilestones > 0) {
+            $completedMilestones = $this->milestones()->where('is_completed', true)->count();
+            $milestoneProgress = ($completedMilestones / $totalMilestones) * 100;
+            $components[] = $milestoneProgress;
+            $weights[] = 40;
+        }
+        
+        // Component 3: Final Completion Progress (project or assessment)
+        if ($this->completion_type) {
+            $finalProgress = 0;
+            if ($this->completion_type === 'final_project' && $this->isFinalProjectSubmitted()) {
+                $finalProgress = 100;
+            } elseif ($this->completion_type === 'final_assessment' && $this->isAssessmentSubmitted()) {
+                $finalProgress = 100;
+            }
+            $components[] = $finalProgress;
+            $weights[] = 20;
+        }
+        
+        // Calculate weighted average
+        if (count($components) > 0) {
+            $totalWeight = array_sum($weights);
+            $weightedSum = 0;
+            for ($i = 0; $i < count($components); $i++) {
+                $weightedSum += $components[$i] * $weights[$i];
+            }
+            $this->progress_percentage = round($weightedSum / $totalWeight);
+        } else {
+            $this->progress_percentage = 0;
+        }
+        
         $this->save();
     }
 
@@ -117,6 +163,73 @@ class LearningGoal extends Model
     public function isFinalProjectSubmitted(): bool
     {
         return $this->final_project_submitted_at !== null;
+    }
+    
+    /**
+     * Check if assessment is submitted
+     */
+    public function isAssessmentSubmitted(): bool
+    {
+        return $this->assessment_submitted_at !== null;
+    }
+    
+    /**
+     * Check if prerequisites are met to submit final completion
+     * (milestones and daily target must be completed first)
+     */
+    public function canSubmitFinalCompletion(): bool
+    {
+        // Check daily target (if enabled)
+        if ($this->daily_target_minutes && $this->target_days) {
+            if ($this->days_completed < $this->target_days) {
+                return false;
+            }
+        }
+        
+        // Check milestones
+        $totalMilestones = $this->milestones()->count();
+        if ($totalMilestones > 0) {
+            $completedMilestones = $this->milestones()->where('is_completed', true)->count();
+            if ($completedMilestones < $totalMilestones) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Check if goal is fully completed
+     */
+    public function isFullyCompleted(): bool
+    {
+        // Check daily target (if enabled)
+        if ($this->daily_target_minutes && $this->target_days) {
+            if ($this->days_completed < $this->target_days) {
+                return false;
+            }
+        }
+        
+        // Check milestones
+        $totalMilestones = $this->milestones()->count();
+        if ($totalMilestones > 0) {
+            $completedMilestones = $this->milestones()->where('is_completed', true)->count();
+            if ($completedMilestones < $totalMilestones) {
+                return false;
+            }
+        }
+        
+        // Check final completion
+        if ($this->completion_type) {
+            if ($this->completion_type === 'final_project' && !$this->isFinalProjectSubmitted()) {
+                return false;
+            }
+            if ($this->completion_type === 'final_assessment' && !$this->isAssessmentSubmitted()) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }
 

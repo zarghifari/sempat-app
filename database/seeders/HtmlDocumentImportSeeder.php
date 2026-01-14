@@ -146,8 +146,8 @@ class HtmlDocumentImportSeeder extends Seeder
                 'order' => 1,
                 'duration_minutes' => $transformed['reading_time'],
                 'is_preview' => true, // Allow preview without enrollment
-                'attachments' => json_encode($attachments),
-                'external_links' => json_encode($transformed['external_links']),
+                'attachments' => $attachments,
+                'external_links' => $transformed['external_links'],
                 'created_by' => $teacher->id,
                 'status' => 'published',
             ]);

@@ -25,6 +25,9 @@ class LearningGoalSeeder extends Seeder
             $this->command->warn('No student found. Skipping LearningGoalSeeder.');
             return;
         }
+        
+        // Clear existing learning goals for student to avoid duplicates
+        LearningGoal::where('user_id', $student->id)->delete();
 
         $courses = Course::where('status', 'published')->take(3)->get();
         $articles = Article::where('status', 'published')->take(2)->get();
@@ -46,7 +49,6 @@ class LearningGoalSeeder extends Seeder
             'status' => 'active',
             'target_date' => Carbon::now()->addDays(25),
             'completed_at' => null,
-            'progress_percentage' => 60,
             'progress_notes' => 'Sudah selesai belajar HTML dasar, sedang fokus ke CSS.',
             'related_article_ids' => $articles->isNotEmpty() ? json_encode([$articles->first()->id]) : null,
             'final_project_title' => 'Portfolio Website',
@@ -54,6 +56,7 @@ class LearningGoalSeeder extends Seeder
             'final_project_url' => null,
             'final_project_file' => null,
             'final_project_submitted_at' => null,
+            'completion_type' => 'final_project',
         ]);
 
         // Milestones untuk Goal 1
@@ -99,42 +102,61 @@ class LearningGoalSeeder extends Seeder
             'order' => 5,
             'is_completed' => false,
         ]);
+        
+        // Recalculate progress based on completed milestones
+        $goal1->recalculateProgress();
 
-        // Goal 2: Habit goal with daily target
+        // Goal 2: Habit goal with daily target and assessment (prerequisites met - can submit)
         $goal2 = LearningGoal::create([
             'user_id' => $student->id,
             'title' => 'Belajar 30 Menit Setiap Hari',
-            'description' => 'Konsisten belajar minimal 30 menit setiap hari selama 90 hari untuk membangun kebiasaan belajar yang baik.',
+            'description' => 'Konsisten belajar minimal 30 menit setiap hari selama 30 hari untuk membangun kebiasaan belajar yang baik.',
             'category' => 'personal',
             'priority' => 'high',
             'status' => 'active',
-            'target_date' => Carbon::now()->addDays(70),
+            'target_date' => Carbon::now()->addDays(10),
             'completed_at' => null,
-            'progress_percentage' => 22,
-            'progress_notes' => 'Sudah konsisten 20 hari berturut-turut!',
+            'progress_notes' => 'Sudah mencapai target 30 hari!',
             'related_article_ids' => null,
             'daily_target_minutes' => 30,
-            'target_days' => 90,
-            'days_completed' => 20,
+            'target_days' => 30,
+            'days_completed' => 30, // Target tercapai!
+            'completion_type' => 'final_assessment',
+        ]);
+        
+        // Add milestones for Goal 2
+        LearningGoalMilestone::create([
+            'learning_goal_id' => $goal2->id,
+            'title' => 'Week 1: Establish Routine',
+            'description' => 'Belajar konsisten 7 hari pertama',
+            'order' => 1,
+            'is_completed' => true,
+            'completed_at' => Carbon::now()->subDays(23),
         ]);
 
-        // Goal 3: Reading goal
-        LearningGoal::create([
-            'user_id' => $student->id,
-            'title' => 'Membaca 5 Artikel Pengembangan Diri',
-            'description' => 'Membaca dan merangkum 5 artikel tentang produktivitas dan time management.',
-            'category' => 'personal',
-            'priority' => 'medium',
-            'status' => 'active',
-            'target_date' => Carbon::now()->addDays(33),
-            'completed_at' => null,
-            'progress_percentage' => 0,
-            'progress_notes' => null,
-            'related_article_ids' => null,
+        LearningGoalMilestone::create([
+            'learning_goal_id' => $goal2->id,
+            'title' => 'Week 2-3: Build Momentum',
+            'description' => 'Terus konsisten hingga 21 hari',
+            'order' => 2,
+            'is_completed' => true,
+            'completed_at' => Carbon::now()->subDays(9),
         ]);
 
-        // Goal 4: Completed with final project submitted
-        $goal4 = LearningGoal::create([
+        LearningGoalMilestone::create([
+            'learning_goal_id' => $goal2->id,
+            'title' => 'Week 4: Complete Challenge',
+            'description' => 'Selesaikan 30 hari penuh',
+            'order' => 3,
+            'is_completed' => true,
+            'completed_at' => Carbon::now()->subDays(1),
+        ]);
+        
+        // Recalculate progress based on daily target completion
+        $goal2->recalculateProgress();
+
+        // Goal 3: Completed with assessment
+        $goal3 = LearningGoal::create([
             'user_id' => $student->id,
             'title' => 'Menyelesaikan Course Matematika Dasar',
             'description' => 'Menyelesaikan semua module dan quiz di course Matematika Dasar dengan nilai minimal 80%.',
@@ -143,9 +165,9 @@ class LearningGoalSeeder extends Seeder
             'status' => 'completed',
             'target_date' => Carbon::now()->subDays(5),
             'completed_at' => Carbon::now()->subDays(3),
-            'progress_percentage' => 100,
             'progress_notes' => 'Selesai dengan nilai rata-rata 85%. Sangat membantu!',
             'related_article_ids' => null,
+            'completion_type' => 'final_project',
             'final_project_title' => 'Kumpulan Soal Matematika',
             'final_project_description' => 'Rangkuman materi dan 20 soal latihan matematika dasar dengan pembahasan',
             'final_project_url' => 'https://drive.google.com/file/d/example123',
@@ -153,9 +175,9 @@ class LearningGoalSeeder extends Seeder
             'final_project_submitted_at' => Carbon::now()->subDays(3),
         ]);
 
-        // Milestones untuk Goal 4 (all completed)
+        // Milestones untuk Goal 3 (all completed)
         LearningGoalMilestone::create([
-            'learning_goal_id' => $goal4->id,
+            'learning_goal_id' => $goal3->id,
             'title' => 'Selesaikan Semua Module',
             'description' => 'Menyelesaikan 5 module pembelajaran',
             'order' => 1,
@@ -164,7 +186,7 @@ class LearningGoalSeeder extends Seeder
         ]);
 
         LearningGoalMilestone::create([
-            'learning_goal_id' => $goal4->id,
+            'learning_goal_id' => $goal3->id,
             'title' => 'Lulus Semua Quiz',
             'description' => 'Mendapat nilai minimal 80% di semua quiz',
             'order' => 2,
@@ -173,44 +195,17 @@ class LearningGoalSeeder extends Seeder
         ]);
 
         LearningGoalMilestone::create([
-            'learning_goal_id' => $goal4->id,
+            'learning_goal_id' => $goal3->id,
             'title' => 'Submit Final Project',
             'description' => 'Membuat dan submit rangkuman materi',
             'order' => 3,
             'is_completed' => true,
             'completed_at' => Carbon::now()->subDays(3),
         ]);
+        
+        // Recalculate progress - should be 100% since all milestones and final project completed
+        $goal3->recalculateProgress();
 
-        // Goal 5: Language learning
-        LearningGoal::create([
-            'user_id' => $student->id,
-            'title' => 'Meningkatkan Kemampuan Bahasa Inggris',
-            'description' => 'Mempelajari grammar dan vocabulary bahasa Inggris, target bisa membaca artikel teknis tanpa kesulitan.',
-            'category' => 'skill',
-            'priority' => 'medium',
-            'status' => 'active',
-            'target_date' => Carbon::now()->addDays(50),
-            'completed_at' => null,
-            'progress_percentage' => 15,
-            'progress_notes' => 'Fokus pada technical vocabulary.',
-            'related_article_ids' => null,
-        ]);
-
-        // Goal 6: Abandoned
-        LearningGoal::create([
-            'user_id' => $student->id,
-            'title' => 'Belajar Python Programming',
-            'description' => 'Mempelajari dasar-dasar Python untuk data science.',
-            'category' => 'skill',
-            'priority' => 'low',
-            'status' => 'abandoned',
-            'target_date' => Carbon::now()->addDays(15),
-            'completed_at' => null,
-            'progress_percentage' => 10,
-            'progress_notes' => 'Ditunda karena fokus ke HTML/CSS dulu.',
-            'related_article_ids' => null,
-        ]);
-
-        $this->command->info('✓ Created 6 learning goals with milestones for student');
+        $this->command->info('✓ Created 3 learning goals with milestones for student');
     }
 }
