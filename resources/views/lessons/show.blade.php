@@ -2,15 +2,44 @@
 
 @section('title', $lesson['title'])
 
+@push('styles')
+<style>
+    .tracker-status {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 4px;
+    }
+    .tracker-active { background-color: #22c55e; animation: pulse 2s infinite; }
+    .tracker-idle { background-color: #eab308; }
+    .tracker-paused { background-color: #94a3b8; }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+@endpush
+
 @section('content')
     <div class="px-4">
 
-        <!-- Lesson Progress Bar (if enrolled) -->
+        <!-- Lesson Progress Bar & Study Timer (if enrolled) -->
         @if ($lesson['is_enrolled'])
             <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
-                <div class="flex justify-between text-sm mb-2">
-                    <span class="font-medium text-gray-700">Progress Anda</span>
-                    <span class="font-bold text-blue-600">{{ $lesson['completion_percentage'] }}%</span>
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-gray-700">Progress Anda</span>
+                        <span class="font-bold text-blue-600">{{ $lesson['completion_percentage'] }}%</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600">
+                        <span id="tracker-status" class="tracker-status tracker-active" title="Tracking active"></span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span id="study-timer" class="font-mono font-semibold">00:00</span>
+                    </div>
                 </div>
                 <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
@@ -310,3 +339,84 @@
         }
     </style>
 @endsection
+
+@if ($lesson['is_enrolled'])
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tracker for this COURSE (shared across all lessons)
+            // Using course_id as resourceId so all lessons share same localStorage key
+            const courseId = {{ $lesson['course_id'] }};
+            const lessonId = {{ $lesson['id'] }};
+            
+            const tracker = new StudyTimeTracker({
+                resourceType: 'course', // CHANGED: course-level timer
+                resourceId: courseId, // CHANGED: Use course_id for shared timer
+                actualLessonId: lessonId, // Track actual lesson for API
+                apiEndpoint: '/api/lessons/' + lessonId + '/track-time',
+                displayElement: document.getElementById('study-timer'),
+                idleThreshold: 3 * 60 * 1000, // 3 minutes
+                syncInterval: 30 * 1000, // 30 seconds
+                minSyncSeconds: 5, // Minimum 5 seconds before syncing
+            });
+
+            // Load initial time from server
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            console.log('[Lesson Tracker] CSRF Token:', csrfToken ? 'Found' : 'NOT FOUND');
+            console.log('[Lesson Tracker] Loading COURSE time for today...');
+            
+            fetch('/api/lessons/' + lessonId + '/time', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => {
+                console.log('[Lesson Tracker] Response status:', res.status);
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log('[Lesson Tracker] ✓ Course time loaded:', data);
+                console.log('[Lesson Tracker] Today course total:', data.today_course_time || data.total_seconds);
+                console.log('[Lesson Tracker] This lesson:', data.this_lesson_time);
+                
+                // Use course time (all lessons in course combined today)
+                const courseTime = data.today_course_time || data.total_seconds || 0;
+                tracker.totalSeconds = courseTime;
+                
+                // Mark as initialized - now safe to display and count time
+                tracker.isInitialized = true;
+                
+                // CRITICAL: Reset all timing variables to prevent spike from initialization delay
+                tracker.lastSync = Date.now();
+                tracker.startTime = Date.now();
+                tracker.accumulatedTime = 0; // Reset any accumulated time during init
+                tracker.totalActiveTime = 0;
+                
+                console.log(`[Lesson Tracker] 🎯 INITIALIZED! totalSeconds=${courseTime}, isInitialized=${tracker.isInitialized}`);
+                
+                // Force immediate display update
+                tracker.updateDisplay();
+            })
+            .catch(err => console.error('Failed to load initial time:', err));
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                tracker.destroy();
+            });
+
+            // Listen for time updates
+            window.addEventListener('study-time-updated', (event) => {
+                console.log('Study time updated:', event.detail.formatted);
+            });
+        });
+    </script>
+@endpush
+@endif

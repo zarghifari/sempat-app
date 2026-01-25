@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="test-token">
+    <title>Study Time Tracker Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .tracker-card {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .tracker-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .tracker-active { 
+            background-color: #22c55e; 
+            animation: pulse 2s infinite; 
+        }
+        .tracker-idle { background-color: #eab308; }
+        .tracker-paused { background-color: #94a3b8; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        #timer-display {
+            font-size: 48px;
+            font-weight: bold;
+            font-family: monospace;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .log {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Study Time Tracker Test Page</h1>
+    <p>Test untuk memastikan tracker berfungsi dengan baik di Laravel Blade.</p>
+    
+    <div class="tracker-card">
+        <h2>Timer Display</h2>
+        <div style="text-align: center;">
+            <span id="tracker-status" class="tracker-status tracker-active" title="Active"></span>
+            <span style="font-size: 14px; color: #666;">Status</span>
+        </div>
+        <div id="timer-display">00:00</div>
+        <p style="text-align: center; color: #666;">
+            Timer akan mulai otomatis. Coba switch tab atau idle untuk test.
+        </p>
+    </div>
+    
+    <div class="tracker-card">
+        <h3>Tracker Stats</h3>
+        <div id="stats">
+            <p><strong>Resource:</strong> <span id="stat-resource">lesson-test</span></p>
+            <p><strong>Tracking:</strong> <span id="stat-tracking">Yes</span></p>
+            <p><strong>Idle:</strong> <span id="stat-idle">No</span></p>
+            <p><strong>Tab Active:</strong> <span id="stat-tab">Yes</span></p>
+            <p><strong>Last Activity:</strong> <span id="stat-activity">Now</span></p>
+        </div>
+    </div>
+    
+    <div class="tracker-card">
+        <h3>Console Log</h3>
+        <div id="console-log" class="log">
+            <div class="log-entry">🚀 Initializing tracker...</div>
+        </div>
+    </div>
+    
+    <!-- Load Tracker Script -->
+    <script src="/js/study-time-tracker.js"></script>
+    
+    <script>
+        // Simple logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('console-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const icons = {
+                info: 'ℹ️',
+                success: '✅',
+                warning: '⚠️',
+                error: '❌'
+            };
+            entry.textContent = `${icons[type]} ${new Date().toLocaleTimeString()} - ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Mock API endpoint (for testing without backend)
+        let mockTotalSeconds = 0;
+        
+        // Intercept fetch to mock API
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            // Mock track-time endpoint
+            if (url.includes('/track-time')) {
+                log(`API Call: POST ${url}`, 'info');
+                const body = JSON.parse(options.body);
+                log(`Tracking ${body.seconds} seconds`, 'success');
+                mockTotalSeconds += body.seconds;
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        total_seconds: mockTotalSeconds,
+                        formatted: formatTime(mockTotalSeconds)
+                    })
+                });
+            }
+            
+            // Mock get time endpoint
+            if (url.includes('/time')) {
+                log(`API Call: GET ${url}`, 'info');
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        total_seconds: mockTotalSeconds,
+                        formatted: formatTime(mockTotalSeconds),
+                        last_accessed: new Date().toISOString()
+                    })
+                });
+            }
+            
+            // Default to original fetch for other URLs
+            return originalFetch.apply(this, arguments);
+        };
+        
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            if (h > 0) {
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        
+        // Initialize tracker
+        log('Creating StudyTimeTracker instance...', 'info');
+        
+        const tracker = new StudyTimeTracker({
+            resourceType: 'lesson',
+            resourceId: 999,
+            apiEndpoint: '/api/lessons/999/track-time',
+            displayElement: document.getElementById('timer-display'),
+            idleThreshold: 30 * 1000, // 30 seconds for testing (normally 3 minutes)
+            syncInterval: 10 * 1000, // 10 seconds for testing (normally 30 seconds)
+            minSyncSeconds: 3, // 3 seconds for testing
+        });
+        
+        log('Tracker initialized successfully!', 'success');
+        log('Try switching tabs, being idle, or moving mouse...', 'info');
+        
+        // Update stats display
+        setInterval(() => {
+            document.getElementById('stat-tracking').textContent = tracker.isTracking ? 'Yes ✅' : 'No ❌';
+            document.getElementById('stat-idle').textContent = tracker.isIdle ? 'Yes 😴' : 'No 👀';
+            document.getElementById('stat-tab').textContent = !document.hidden ? 'Yes ✅' : 'No ❌';
+            
+            const timeSinceActivity = Math.floor((Date.now() - tracker.lastActivity) / 1000);
+            document.getElementById('stat-activity').textContent = timeSinceActivity === 0 ? 'Now' : `${timeSinceActivity}s ago`;
+            
+            // Update status indicator
+            const statusEl = document.getElementById('tracker-status');
+            if (tracker.isTracking && !tracker.isIdle) {
+                statusEl.className = 'tracker-status tracker-active';
+                statusEl.title = 'Tracking Active';
+            } else if (tracker.isIdle) {
+                statusEl.className = 'tracker-status tracker-idle';
+                statusEl.title = 'Idle (no activity)';
+            } else {
+                statusEl.className = 'tracker-status tracker-paused';
+                statusEl.title = 'Paused (tab not active)';
+            }
+        }, 500);
+        
+        // Listen for tracker state changes
+        const originalPause = tracker.pause.bind(tracker);
+        tracker.pause = function(reason) {
+            log(`⏸️ PAUSED: ${reason}`, 'warning');
+            return originalPause(reason);
+        };
+        
+        const originalResume = tracker.resume.bind(tracker);
+        tracker.resume = function(reason) {
+            log(`▶️ RESUMED: ${reason}`, 'success');
+            return originalResume(reason);
+        };
+        
+        // Listen for sync events
+        window.addEventListener('study-time-updated', (event) => {
+            log(`⏱️ Time synced: ${event.detail.formatted}`, 'success');
+        });
+        
+        // Log visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                log('👁️ Tab hidden (switched away)', 'warning');
+            } else {
+                log('👁️ Tab visible (switched back)', 'success');
+            }
+        });
+        
+        // Log window focus changes
+        window.addEventListener('blur', () => {
+            log('🪟 Window lost focus', 'warning');
+        });
+        
+        window.addEventListener('focus', () => {
+            log('🪟 Window gained focus', 'success');
+        });
+    </script>
+</body>
+</html>

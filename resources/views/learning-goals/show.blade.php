@@ -54,7 +54,7 @@
             </div>
 
             <!-- Goal Info -->
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-4 gap-2">
                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
                     <div class="text-xs text-purple-100 mb-1">Category</div>
                     <div class="font-semibold text-sm capitalize">
@@ -84,6 +84,12 @@
                     </div>
                 </div>
                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
+                    <div class="text-xs text-purple-100 mb-1">Study Time</div>
+                    <div class="font-semibold text-sm" id="goal-study-timer">
+                        {{ gmdate('H:i:s', $learningGoal->total_study_seconds ?? 0) }}
+                    </div>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
                     <div class="text-xs text-purple-100 mb-1">Target Date</div>
                     <div class="font-semibold text-sm">
                         @if($learningGoal->target_date)
@@ -96,88 +102,113 @@
             </div>
         </div>
 
-        <!-- Daily Target (if exists) -->
-        @if($learningGoal->daily_target_minutes)
+        <!-- Daily Study Time Tracker -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="font-semibold text-gray-800 flex items-center gap-2">
                     <span class="text-xl">⏱️</span>
+                    @if($learningGoal->daily_target_minutes)
                     Daily Study Target
+                    @else
+                    Daily Study Time
+                    @endif
                 </h2>
-                <button id="viewLogsBtn" 
-                        class="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                    View History
-                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">⚡ Auto-tracking</span>
+                </div>
             </div>
 
-            <!-- Timer Widget -->
-            <div class="mb-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-100">
-                <div class="text-center mb-3">
-                    <div id="timerDisplay" class="text-4xl font-bold text-purple-700 mb-1">00:00</div>
-                    <div id="timerStatus" class="text-sm text-gray-600">Ready to start</div>
+            <!-- Automatic Time Tracking Display -->
+            <div class="mb-4 p-5 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-100">
+                <div class="text-center mb-4">
+                    <div class="text-sm text-purple-600 font-medium mb-2">📊 Today's Progress</div>
+                    <div class="text-xs text-gray-500 mb-3">
+                        ⚡ Auto-tracks your study time from reading articles
+                    </div>
+                    <div class="flex items-center justify-center gap-4 mb-3">
+                        <div class="text-center">
+                            <div id="dailyStudyTime" class="text-3xl font-bold text-purple-700">0m</div>
+                            <div class="text-xs text-gray-600">Studied Today</div>
+                        </div>
+                        @if($learningGoal->daily_target_minutes)
+                        <div class="text-2xl text-gray-400">/</div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-gray-700">{{ $learningGoal->daily_target_minutes }}m</div>
+                            <div class="text-xs text-gray-600">Target</div>
+                        </div>
+                        @endif
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-2">
-                    <button id="startTimerBtn" 
-                            class="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Start
-                    </button>
-                    <button id="pauseTimerBtn" 
-                            class="hidden flex-1 py-2.5 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Pause
-                    </button>
-                    <button id="stopTimerBtn" 
-                            class="hidden px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-                        </svg>
-                    </button>
-                </div>
-
+                @if($learningGoal->daily_target_minutes)
                 <!-- Progress Bar -->
-                <div class="mt-3">
-                    <div class="flex justify-between text-xs text-gray-600 mb-1">
-                        <span id="todayMinutes">Today: 0 min</span>
-                        <span id="remainingMinutes">Remaining: {{ $learningGoal->daily_target_minutes }} min</span>
+                <div>
+                    <div class="flex justify-between text-xs text-gray-600 mb-2">
+                        <span id="progressPercentage">0%</span>
+                        <span id="remainingTime">{{ $learningGoal->daily_target_minutes }} min remaining</span>
                     </div>
-                    <div class="w-full bg-white rounded-full h-2">
-                        <div id="todayProgress" 
-                             class="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all" 
-                             style="width: 0%"></div>
+                    <div class="w-full bg-white rounded-full h-3 shadow-inner">
+                        <div id="dailyProgress" 
+                             class="bg-gradient-to-r from-purple-500 via-purple-600 to-blue-500 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2" 
+                             style="width: 0%">
+                            <span class="hidden" id="progressDot">⭐</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-center gap-2">
+                        <span id="trackingStatus" class="text-xs text-green-600 font-medium">✓ Auto-tracking from articles</span>
+                        <span id="targetAchieved" class="hidden px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                            🎯 Target Achieved!
+                        </span>
+                    </div>
+                </div>
+                @else
+                <!-- Simple Tracking Status (No Target) -->
+                <div class="mt-3 text-center">
+                    <span id="trackingStatus" class="text-xs text-green-600 font-medium">✓ Auto-tracking from articles</span>
+                </div>
+                @endif
+            </div>
+
+            <!-- Info Banner -->
+            <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">💡</span>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-blue-800 text-sm mb-1">How Daily Tracking Works</h4>
+                        <p class="text-xs text-blue-700 leading-relaxed">
+                            Your daily study time is automatically tracked when you read articles in the library. 
+                            @if($learningGoal->daily_target_minutes)
+                            The timer syncs with your article reading sessions, so you can focus on learning while 
+                            we track your progress toward your {{ $learningGoal->daily_target_minutes }}-minute daily goal!
+                            @else
+                            The timer syncs with your article reading sessions, so you can focus on learning while 
+                            we track your study time. Set a daily target to track your progress!
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>
 
             <!-- Stats Grid -->
+            @if($learningGoal->daily_target_minutes)
             <div class="grid grid-cols-3 gap-3">
-                <div class="text-center p-3 bg-blue-50 rounded-lg">
-                    <div class="text-2xl font-bold text-blue-600">{{ $learningGoal->daily_target_minutes }}</div>
-                    <div class="text-xs text-gray-600">Minutes/Day</div>
+                <div class="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="text-2xl font-bold text-blue-600">{{ $learningGoal->daily_target_minutes }}m</div>
+                    <div class="text-xs text-gray-600">Daily Target</div>
                 </div>
-                <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-center p-3 bg-green-50 rounded-lg border border-green-100">
                     <div id="daysCompletedDisplay" class="text-2xl font-bold text-green-600">{{ $learningGoal->days_completed }}/{{ $learningGoal->target_days }}</div>
-                    <div class="text-xs text-gray-600">Days Completed</div>
+                    <div class="text-xs text-gray-600">Days Met</div>
                 </div>
-                <div class="text-center p-3 bg-purple-50 rounded-lg">
-                    <div id="overallProgressDisplay" class="text-2xl font-bold text-purple-600">
-                        {{ $learningGoal->target_days ? round(($learningGoal->days_completed / $learningGoal->target_days) * 100) : 0 }}%
+                <div class="text-center p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <div id="totalStudyTime" class="text-2xl font-bold text-purple-600">
+                        {{ floor($learningGoal->total_study_seconds / 60) }}m
                     </div>
-                    <div class="text-xs text-gray-600">Progress</div>
+                    <div class="text-xs text-gray-600">Total Time</div>
                 </div>
             </div>
+            @endif
         </div>
-        @endif
 
         <!-- Milestones Section -->
         @if($learningGoal->milestones->isNotEmpty())
@@ -779,8 +810,8 @@ document.getElementById('evidenceModal').addEventListener('click', function(e) {
     }
 });
 
-// Study Timer Functionality
-@if($learningGoal->daily_target_minutes)
+// Old Study Timer Functionality - DISABLED (using StudyTimeTracker below)
+@if(false && $learningGoal->daily_target_minutes)
 let studyTimer = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1052,11 +1083,313 @@ function showNotification(message, type = 'success') {
 
 // Save timer on page unload
 window.addEventListener('beforeunload', function() {
-    if (studyTimer && studyTimer.isRunning) {
-        studyTimer.saveToStorage();
+    if (goalTracker) {
+        goalTracker.sync(true); // Force final sync
+        goalTracker.destroy();
     }
 });
+
+// Initialize Study Time Tracker for Learning Goal
+const goalTracker = new StudyTimeTracker({
+    resourceType: 'learning-goal',
+    resourceId: {{ $learningGoal->id }},
+    apiEndpoint: '/api/learning-goals/{{ $learningGoal->id }}/track-time',
+    displayElement: 'goal-study-timer',
+    idleThreshold: 5 * 60 * 1000, // 5 minutes for goals (longer idle threshold)
+    syncInterval: 60 * 1000, // 60 seconds
+    minSyncSeconds: 10,
+});
+
+// Load initial time from server
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+console.log('[Goal Tracker] CSRF Token:', csrfToken ? 'Found' : 'NOT FOUND');
+console.log('[Goal Tracker] Loading time for goal {{ $learningGoal->id }}...');
+
+fetch('/api/learning-goals/{{ $learningGoal->id }}/time', {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+})
+.then(res => {
+    console.log('[Goal Tracker] Response status:', res.status);
+    if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    return res.json();
+})
+.then(data => {
+    console.log('[Goal Tracker] Time loaded:', data);
+    if (data.total_seconds !== undefined) {
+        goalTracker.totalSeconds = data.total_seconds;
+        
+        // Mark as initialized
+        goalTracker.isInitialized = true;
+        
+        // CRITICAL: Reset all timing variables to prevent spike from initialization delay
+        goalTracker.lastSync = Date.now();
+        goalTracker.startTime = Date.now();
+        goalTracker.accumulatedTime = 0; // Reset any accumulated time during init
+        goalTracker.totalActiveTime = 0;
+        
+        console.log(`[Goal Tracker] 🎯 INITIALIZED! totalSeconds=${data.total_seconds}, isInitialized=true`);
+        
+        goalTracker.updateDisplay();
+    }
+})
+.catch(err => console.error('Failed to load goal time:', err));
+
 @endif
+// ============================================================
+// DAILY STUDY TIME TRACKING (Uses today_global_time from Articles)
+// ============================================================
+let dailyTargetReached = false;
+const dailyTargetMinutes = {{ $learningGoal->daily_target_minutes ?? 0 }};
+const currentDate = new Date().toDateString();
+let todayGlobalSeconds = 0; // Today's total study time (from articles)
+
+@if($learningGoal->daily_target_minutes)
+// Check if target already reached today (from localStorage)
+const targetReachedToday = localStorage.getItem('targetReached_' + {{ $learningGoal->id }} + '_' + currentDate);
+if (targetReachedToday === 'true') {
+    dailyTargetReached = true;
+}
+@endif
+
+// Fetch today's global study time from API
+function fetchDailyStudyTime() {
+    console.log('[Daily Progress] Fetching from:', '/api/daily-study-time');
+    fetch('/api/daily-study-time', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { 
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => {
+        console.log('[Daily Progress] Response status:', res.status);
+        if (!res.ok) {
+            throw new Error('HTTP error! status: ' + res.status);
+        }
+        return res.json();
+    })
+    .then(data => {
+        console.log('[Daily Progress] API Response:', data);
+        console.log('[Daily Progress] today_total_seconds:', data.today_total_seconds);
+        console.log('[Daily Progress] today_total_minutes:', data.today_total_minutes);
+        todayGlobalSeconds = data.today_total_seconds || 0;
+        console.log('[Daily Progress] Setting todayGlobalSeconds to:', todayGlobalSeconds);
+        updateDailyProgress();
+    })
+    .catch(err => {
+        console.error('[Daily Progress] Error:', err);
+        console.error('[Daily Progress] Failed to load daily study time');
+    });
+}
+
+// Update daily progress display
+function updateDailyProgress() {
+    // Use today_global_time (same as articles tracker)
+    const totalMinutes = Math.floor(todayGlobalSeconds / 60);
+    
+    // Update time display
+    const dailyStudyTimeEl = document.getElementById('dailyStudyTime');
+    if (dailyStudyTimeEl) {
+        dailyStudyTimeEl.textContent = totalMinutes + 'm';
+    }
+    
+    // Only update progress elements if there's a target
+    if (dailyTargetMinutes > 0) {
+        // Calculate progress
+        const progressPercent = Math.min(100, Math.round((totalMinutes / dailyTargetMinutes) * 100));
+        const remaining = Math.max(0, dailyTargetMinutes - totalMinutes);
+        
+        // Update progress bar
+        const progressBar = document.getElementById('dailyProgress');
+        if (progressBar) {
+            progressBar.style.width = progressPercent + '%';
+        }
+        
+        const progressPercentEl = document.getElementById('progressPercentage');
+        if (progressPercentEl) {
+            progressPercentEl.textContent = progressPercent + '%';
+        }
+        
+        const remainingTimeEl = document.getElementById('remainingTime');
+        if (remainingTimeEl) {
+            remainingTimeEl.textContent = remaining + ' min remaining';
+        }
+        
+        // Show star when > 50%
+        const progressDot = document.getElementById('progressDot');
+        if (progressDot && progressPercent > 50) {
+            progressDot.classList.remove('hidden');
+        }
+        
+        // Show achievement badge when target reached
+        const targetAchievedEl = document.getElementById('targetAchieved');
+        if (targetAchievedEl) {
+            if (progressPercent >= 100) {
+                targetAchievedEl.classList.remove('hidden');
+            } else {
+                targetAchievedEl.classList.add('hidden');
+            }
+        }
+        
+        // Check if daily target reached
+        if (totalMinutes >= dailyTargetMinutes && !dailyTargetReached) {
+            dailyTargetReached = true;
+            localStorage.setItem('targetReached_' + {{ $learningGoal->id }} + '_' + currentDate, 'true');
+            showDailyTargetNotification(totalMinutes);
+            
+            // Trigger confetti effect
+            if (progressBar) {
+                progressBar.classList.add('animate-pulse');
+                setTimeout(() => {
+                    progressBar.classList.remove('animate-pulse');
+                }, 2000);
+            }
+        }
+    }
+    
+    // Update tracking status (show if articles are being tracked)
+    const trackingStatusEl = document.getElementById('trackingStatus');
+    if (trackingStatusEl) {
+        const articlesTracking = document.visibilityState === 'visible';
+        if (articlesTracking) {
+            trackingStatusEl.innerHTML = '✓ <span class="text-green-600">Auto-tracking from articles</span>';
+        } else {
+            trackingStatusEl.innerHTML = '⏸️ <span class="text-gray-600">Paused (tab hidden)</span>';
+        }
+    }
+}
+
+// Show notification when daily target reached
+function showDailyTargetNotification(minutes) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-20 right-4 z-50 animate-slide-in-right';
+    notification.innerHTML = `
+        <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-2xl p-6 max-w-sm border-2 border-green-400">
+            <div class="flex items-start gap-4">
+                <div class="text-4xl animate-bounce">🎉</div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg mb-1">Daily Target Reached!</h3>
+                    <p class="text-sm text-green-50 mb-3">
+                        Congratulations! You've completed <strong>${minutes} minutes</strong> of study today.
+                        Your daily target of <strong>${dailyTargetMinutes} minutes</strong> has been achieved! 🌟
+                    </p>
+                    <div class="flex gap-2">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors">
+                            Dismiss
+                        </button>
+                        <button onclick="this.closest('.fixed').remove(); confetti()" 
+                                class="px-3 py-1.5 bg-white text-green-600 hover:bg-green-50 rounded-lg text-xs font-semibold transition-colors">
+                            🎊 Celebrate!
+                        </button>
+                    </div>
+                </div>
+                <button onclick="this.closest('.fixed').remove()" 
+                        class="text-white/80 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(400px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 10000);
+    
+    // Play success sound (optional)
+    try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVKvm7bhbGAg+ltfzw28hBSyAy/PSfzYIGWS36+OnUQ8NSKXh8bllHAU2jdXzzn0qBSh+zPDajzsKE1251+ypWRQKQJrZ88p0JwUrfs3w3os+CxJas+vurV4XCjyS1vPKeiUFKnzL8N6MPwsRWLPq77FhGgo7kdXzzn0qBSh+zPDajzsKE1251+ypWRQKQJrZ88p0JwUrfs3w3os+CxJas+vurV4XCjyS1vPKeiUFK');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+    } catch(e) {}
+}
+
+// Simple confetti effect
+function confetti() {
+    const colors = ['#9333EA', '#EC4899', '#3B82F6', '#10B981', '#F59E0B'];
+    const confettiCount = 50;
+    
+    for (let i = 0; i < confettiCount; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                top: -10px;
+                left: ${Math.random() * 100}%;
+                width: 10px;
+                height: 10px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                opacity: 1;
+                transform: rotate(${Math.random() * 360}deg);
+                animation: confetti-fall ${2 + Math.random() * 2}s linear forwards;
+                z-index: 9999;
+                pointer-events: none;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4000);
+        }, i * 30);
+    }
+}
+
+// Add confetti animation CSS
+if (!document.getElementById('confetti-style')) {
+    const style = document.createElement('style');
+    style.id = 'confetti-style';
+    style.textContent = `
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        @keyframes slide-in-right {
+            from {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .animate-slide-in-right {
+            animation: slide-in-right 0.4s ease-out;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Fetch daily time on load
+fetchDailyStudyTime();
+
+// Update display every 10 seconds (poll for new data)
+setInterval(fetchDailyStudyTime, 10000);
+
+// Initial update
+updateDailyProgress();
+
+// Listen for visibility changes (pause when tab hidden)
+document.addEventListener('visibilitychange', updateDailyProgress);
 
 function openAssessmentModal() {
     document.getElementById('assessmentModal').classList.remove('hidden');

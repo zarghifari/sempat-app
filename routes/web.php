@@ -1,23 +1,42 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\DocumentImportController;
 use App\Http\Controllers\LearningGoalController;
 use App\Http\Controllers\LearningJournalController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\TeacherDashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    // If user is already authenticated, redirect to dashboard
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    
+    // Show landing page for guests
+    return view('landing');
 });
 
 Route::get('/dashboard', function () {
     $user = Auth::user();
     
+    // Redirect to role-specific dashboard
+    if ($user->hasRole('admin')) {
+        return redirect()->route('admin.dashboard');
+    }
+    
+    if ($user->hasRole('teacher')) {
+        return redirect()->route('teacher.dashboard');
+    }
+    
+    // Student Dashboard
     // Get user's enrollments with courses
     $enrollments = $user->enrollments()->with('course')->active()->get();
     
@@ -199,8 +218,100 @@ Route::middleware('auth')->group(function () {
     Route::put('/learning-journal/{learningJournal}', [LearningJournalController::class, 'update'])->name('learning-journal.update');
     Route::delete('/learning-journal/{learningJournal}', [LearningJournalController::class, 'destroy'])->name('learning-journal.destroy');
     
+    // Document Import Routes
+    Route::get('/document-imports', [DocumentImportController::class, 'index'])->name('document-imports.index');
+    Route::get('/document-imports/create', [DocumentImportController::class, 'create'])->name('document-imports.create');
+    Route::post('/document-imports', [DocumentImportController::class, 'store'])->name('document-imports.store');
+    Route::get('/document-imports/{documentImport}', [DocumentImportController::class, 'show'])->name('document-imports.show');
+    Route::delete('/document-imports/{documentImport}', [DocumentImportController::class, 'destroy'])->name('document-imports.destroy');
+    Route::post('/document-imports/{documentImport}/retry', [DocumentImportController::class, 'retry'])->name('document-imports.retry');
+    Route::post('/document-imports/{documentImport}/create-lesson', [DocumentImportController::class, 'createLesson'])->name('document-imports.create-lesson');
+    Route::get('/document-imports/{documentImport}/status', [DocumentImportController::class, 'status'])->name('document-imports.status');
+    
     // Progress Routes
     Route::get('/progress', [ProgressController::class, 'index'])->name('progress.index');
+    
+    // Teacher Dashboard Routes
+    Route::prefix('teacher')->name('teacher.')->middleware('role:teacher')->group(function () {
+        Route::get('/dashboard', [TeacherDashboardController::class, 'index'])->name('dashboard');
+        
+        // Courses Management
+        Route::get('/courses', [TeacherDashboardController::class, 'courses'])->name('courses');
+        Route::get('/courses/create', [TeacherDashboardController::class, 'createCourse'])->name('courses.create');
+        Route::post('/courses', [TeacherDashboardController::class, 'storeCourse'])->name('courses.store');
+        Route::get('/courses/{id}', [TeacherDashboardController::class, 'showCourse'])->name('courses.show');
+        Route::get('/courses/{id}/edit', [TeacherDashboardController::class, 'editCourse'])->name('courses.edit');
+        Route::put('/courses/{id}', [TeacherDashboardController::class, 'updateCourse'])->name('courses.update');
+        Route::delete('/courses/{id}', [TeacherDashboardController::class, 'destroyCourse'])->name('courses.destroy');
+        
+        // Articles Management
+        Route::get('/articles', [TeacherDashboardController::class, 'articles'])->name('articles');
+        Route::get('/articles/create', [TeacherDashboardController::class, 'createArticle'])->name('articles.create');
+        Route::post('/articles', [TeacherDashboardController::class, 'storeArticle'])->name('articles.store');
+        Route::get('/articles/{id}/edit', [TeacherDashboardController::class, 'editArticle'])->name('articles.edit');
+        Route::put('/articles/{id}', [TeacherDashboardController::class, 'updateArticle'])->name('articles.update');
+        Route::delete('/articles/{id}', [TeacherDashboardController::class, 'destroyArticle'])->name('articles.destroy');
+        
+        // Modules Management
+        Route::get('/courses/{courseId}/modules/create', [TeacherDashboardController::class, 'createModule'])->name('modules.create');
+        Route::post('/courses/{courseId}/modules', [TeacherDashboardController::class, 'storeModule'])->name('modules.store');
+        Route::get('/courses/{courseId}/modules/{moduleId}', [TeacherDashboardController::class, 'showModule'])->name('modules.show');
+        Route::get('/courses/{courseId}/modules/{moduleId}/edit', [TeacherDashboardController::class, 'editModule'])->name('modules.edit');
+        Route::put('/courses/{courseId}/modules/{moduleId}', [TeacherDashboardController::class, 'updateModule'])->name('modules.update');
+        Route::delete('/courses/{courseId}/modules/{moduleId}', [TeacherDashboardController::class, 'destroyModule'])->name('modules.destroy');
+        
+        // Lessons Management
+        Route::get('/courses/{courseId}/modules/{moduleId}/lessons/create', [TeacherDashboardController::class, 'createLesson'])->name('lessons.create');
+        Route::post('/courses/{courseId}/modules/{moduleId}/lessons', [TeacherDashboardController::class, 'storeLesson'])->name('lessons.store');
+        Route::get('/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/edit', [TeacherDashboardController::class, 'editLesson'])->name('lessons.edit');
+        Route::put('/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}', [TeacherDashboardController::class, 'updateLesson'])->name('lessons.update');
+        Route::delete('/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}', [TeacherDashboardController::class, 'destroyLesson'])->name('lessons.destroy');
+        
+        // Student Activity Monitoring (OPTIMIZED with Redis Cache)
+        Route::get('/students', [TeacherDashboardController::class, 'students'])->name('students');
+        Route::get('/students/{studentId}', [TeacherDashboardController::class, 'studentDetail'])->name('students.show');
+        
+        // API endpoints for student monitoring (moved from api.php untuk web session support)
+        Route::get('/api/class/summary', [TeacherDashboardController::class, 'getClassSummary']);
+        Route::get('/api/students/today-progress', [TeacherDashboardController::class, 'getTodayProgress']);
+        Route::get('/api/students/{userId}/progress', [TeacherDashboardController::class, 'getStudentProgress']);
+        
+        // Quiz Grading (uses existing method)
+        Route::get('/quiz-grading', [TeacherDashboardController::class, 'quizGrading'])->name('quiz-grading');
+        
+        Route::get('/document-imports', [TeacherDashboardController::class, 'documentImports'])->name('document-imports');
+        Route::get('/analytics', [TeacherDashboardController::class, 'analytics'])->name('analytics');
+    });
+    
+    // Admin Dashboard Routes
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
+        Route::get('/users/{userId}', [AdminDashboardController::class, 'userDetail'])->name('users.show');
+        
+        // Courses Management (Admin can edit any course)
+        Route::get('/courses', [AdminDashboardController::class, 'courses'])->name('courses');
+        Route::get('/courses/create', [AdminDashboardController::class, 'createCourse'])->name('courses.create');
+        Route::post('/courses', [AdminDashboardController::class, 'storeCourse'])->name('courses.store');
+        Route::get('/courses/{id}/edit', [AdminDashboardController::class, 'editCourse'])->name('courses.edit');
+        Route::put('/courses/{id}', [AdminDashboardController::class, 'updateCourse'])->name('courses.update');
+        Route::delete('/courses/{id}', [AdminDashboardController::class, 'destroyCourse'])->name('courses.destroy');
+        
+        // Articles Management (Admin can edit any article)
+        Route::get('/articles', [AdminDashboardController::class, 'articles'])->name('articles');
+        Route::get('/articles/create', [AdminDashboardController::class, 'createArticle'])->name('articles.create');
+        Route::post('/articles', [AdminDashboardController::class, 'storeArticle'])->name('articles.store');
+        Route::get('/articles/{id}/edit', [AdminDashboardController::class, 'editArticle'])->name('articles.edit');
+        Route::put('/articles/{id}', [AdminDashboardController::class, 'updateArticle'])->name('articles.update');
+        Route::delete('/articles/{id}', [AdminDashboardController::class, 'destroyArticle'])->name('articles.destroy');
+        
+        Route::get('/students', [AdminDashboardController::class, 'students'])->name('students');
+        Route::get('/students/{studentId}', [AdminDashboardController::class, 'studentDetail'])->name('students.show');
+        Route::get('/quiz-attempts', [AdminDashboardController::class, 'quizAttempts'])->name('quiz-attempts');
+        Route::get('/document-imports', [AdminDashboardController::class, 'documentImports'])->name('document-imports');
+        Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics');
+        Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
+    });
     
     // Messages Routes
     Route::get('/messages', function () {
@@ -215,6 +326,30 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages/{id}', function ($id) {
         return view('messages.show', ['id' => $id]);
     })->name('messages.show');
+});
+
+// Time Tracking API Routes (in web middleware for session support)
+Route::middleware('auth')->prefix('api')->group(function () {
+    $controller = \App\Http\Controllers\Api\TimeTrackingController::class;
+    
+    // Lesson time tracking
+    Route::post('/lessons/{lesson}/track-time', [$controller, 'trackLessonTime']);
+    Route::get('/lessons/{lesson}/time', [$controller, 'getLessonTime']);
+    
+    // Learning goal time tracking
+    Route::post('/learning-goals/{goal}/track-time', [$controller, 'trackGoalTime']);
+    Route::get('/learning-goals/{goal}/time', [$controller, 'getGoalTime']);
+    
+    // Article time tracking
+    Route::post('/articles/{article}/track-time', [$controller, 'trackArticleTime']);
+    Route::get('/articles/{article}/time', [$controller, 'getArticleTime']);
+    
+    // Daily study time (for learning goals progress)
+    Route::get('/daily-study-time', [$controller, 'getDailyStudyTime']);
+    
+    // User study statistics
+    Route::get('/user/study-stats', [$controller, 'getUserStats']);
+    Route::get('/user/today-stats', [$controller, 'getTodayStats']);
 });
 
 require __DIR__.'/auth.php';

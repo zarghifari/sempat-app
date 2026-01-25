@@ -18,8 +18,11 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    <!-- Study Timer Script -->
-    <script src="{{ asset('js/study-timer.js') }}"></script>
+    <!-- Study Time Tracker Script (New Active Tracking System) -->
+    <script src="{{ asset('js/study-time-tracker.js') }}"></script>
+    
+    <!-- Additional Styles -->
+    @stack('styles')
     
     <style>
         * {
@@ -115,6 +118,51 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto no-scrollbar mt-14 mb-16 py-4">
+            <!-- Flash Messages -->
+            @if(session('success'))
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm flex items-start gap-3"
+                         x-data="{ show: true }" 
+                         x-show="show" 
+                         x-transition
+                         x-init="setTimeout(() => show = false, 5000)">
+                        <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                        </div>
+                        <button @click="show = false" class="text-green-500 hover:text-green-700">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm flex items-start gap-3"
+                         x-data="{ show: true }" 
+                         x-show="show" 
+                         x-transition
+                         x-init="setTimeout(() => show = false, 5000)">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                        </div>
+                        <button @click="show = false" class="text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
             @yield('content')
         </main>
 
@@ -122,37 +170,80 @@
         @auth
         <nav class="bg-white border-t border-gray-200 shadow-lg safe-bottom fixed bottom-0 left-0 right-0 z-50">
             <div class="flex justify-around items-center h-16">
-                <!-- Home -->
-                <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('dashboard') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
-                    <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('dashboard') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    <span class="text-xs font-medium">Home</span>
-                </a>
+                @if(Auth::user()->hasRole('teacher') || Auth::user()->hasRole('admin'))
+                    <!-- Teacher/Admin Navigation -->
+                    
+                    <!-- Dashboard -->
+                    <a href="{{ Auth::user()->hasRole('admin') ? route('admin.dashboard') : route('teacher.dashboard') }}" 
+                       class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs(['teacher.dashboard', 'admin.dashboard']) ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs(['teacher.dashboard', 'admin.dashboard']) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span class="text-xs font-medium">Dashboard</span>
+                    </a>
 
-                <!-- Courses -->
-                <a href="{{ route('courses.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('courses.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
-                    <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('courses.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                    </svg>
-                    <span class="text-xs font-medium">Courses</span>
-                </a>
+                    <!-- Courses -->
+                    <a href="{{ Auth::user()->hasRole('admin') ? route('admin.courses') : route('teacher.courses') }}" 
+                       class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs(['teacher.courses', 'admin.courses']) ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs(['teacher.courses', 'admin.courses']) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span class="text-xs font-medium">Courses</span>
+                    </a>
 
-                <!-- Articles -->
-                <a href="{{ route('articles.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('articles.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
-                    <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('articles.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
-                    </svg>
-                    <span class="text-xs font-medium">Articles</span>
-                </a>
+                    <!-- Articles -->
+                    <a href="{{ Auth::user()->hasRole('admin') ? route('admin.articles') : route('teacher.articles') }}" 
+                       class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs(['teacher.articles', 'admin.articles']) ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs(['teacher.articles', 'admin.articles']) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span class="text-xs font-medium">Articles</span>
+                    </a>
 
-                <!-- Profile -->
-                <a href="{{ route('profile.show') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('profile.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
-                    <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('profile.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    <span class="text-xs font-medium">Profile</span>
-                </a>
+                    <!-- Students -->
+                    <a href="{{ Auth::user()->hasRole('admin') ? route('admin.students') : route('teacher.students') }}" 
+                       class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs(['teacher.students', 'teacher.students.*', 'admin.students', 'admin.students.*']) ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs(['teacher.students', 'teacher.students.*', 'admin.students', 'admin.students.*']) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span class="text-xs font-medium">Students</span>
+                    </a>
+
+                @else
+                    <!-- Student Navigation -->
+                    
+                    <!-- Home -->
+                    <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('dashboard') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('dashboard') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span class="text-xs font-medium">Home</span>
+                    </a>
+
+                    <!-- Courses -->
+                    <a href="{{ route('courses.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('courses.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('courses.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span class="text-xs font-medium">Courses</span>
+                    </a>
+
+                    <!-- Articles -->
+                    <a href="{{ route('articles.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('articles.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('articles.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                        </svg>
+                        <span class="text-xs font-medium">Articles</span>
+                    </a>
+
+                    <!-- Profile -->
+                    <a href="{{ route('profile.show') }}" class="flex flex-col items-center justify-center flex-1 py-2 {{ request()->routeIs('profile.*') ? 'text-blue-600' : 'text-gray-600' }} active:bg-gray-50">
+                        <svg class="w-6 h-6 mb-1" fill="{{ request()->routeIs('profile.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span class="text-xs font-medium">Profile</span>
+                    </a>
+                @endif
             </div>
         </nav>
         @endauth
@@ -248,5 +339,8 @@
         }
     });
     </script>
+    
+    <!-- Additional Scripts -->
+    @stack('scripts')
 </body>
 </html>

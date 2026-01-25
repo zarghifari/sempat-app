@@ -164,6 +164,14 @@
                 <p class="text-xs text-gray-600 mt-1">Add new content</p>
             </a>
 
+            <a href="{{ route('document-imports.index') }}" class="bg-white rounded-xl p-4 shadow-sm active:scale-95 transition">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3">
+                    <span class="text-2xl">📄</span>
+                </div>
+                <h4 class="font-semibold text-gray-900 text-sm">Import Document</h4>
+                <p class="text-xs text-gray-600 mt-1">Upload & convert</p>
+            </a>
+
             <a href="#" class="bg-white rounded-xl p-4 shadow-sm active:scale-95 transition">
                 <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3">
                     <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

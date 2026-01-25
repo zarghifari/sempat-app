@@ -23,6 +23,8 @@ class LearningGoal extends Model
         'daily_target_minutes',
         'target_days',
         'days_completed',
+        'total_study_seconds',
+        'last_study_at',
         'final_project_title',
         'final_project_description',
         'final_project_url',
@@ -39,6 +41,7 @@ class LearningGoal extends Model
     protected $casts = [
         'target_date' => 'date',
         'completed_at' => 'date',
+        'last_study_at' => 'datetime',
         'related_article_ids' => 'array',
         'final_project_submitted_at' => 'datetime',
         'assessment_submitted_at' => 'datetime',
@@ -76,32 +79,41 @@ class LearningGoal extends Model
     /**
      * Recalculate progress based on all components
      * Progress = weighted average of:
-     * - Daily target (if enabled): 40%
-     * - Milestones: 40%
-     * - Final completion (project/assessment): 20%
+     * - Study time (if daily target enabled): 30%
+     * - Daily target days completed: 30%
+     * - Milestones: 30%
+     * - Final completion (project/assessment): 10%
      */
     public function recalculateProgress()
     {
         $components = [];
         $weights = [];
         
-        // Component 1: Daily Target Progress (if enabled)
+        // Component 1: Study Time Progress (based on total_study_seconds vs target)
         if ($this->daily_target_minutes && $this->target_days) {
-            $dailyProgress = min(100, ($this->days_completed / $this->target_days) * 100);
-            $components[] = $dailyProgress;
-            $weights[] = 40;
+            $targetTotalSeconds = $this->daily_target_minutes * 60 * $this->target_days;
+            $studyTimeProgress = $targetTotalSeconds > 0 
+                ? min(100, ($this->total_study_seconds / $targetTotalSeconds) * 100)
+                : 0;
+            $components[] = $studyTimeProgress;
+            $weights[] = 30;
+            
+            // Component 2: Days Completed Progress
+            $daysProgress = min(100, ($this->days_completed / $this->target_days) * 100);
+            $components[] = $daysProgress;
+            $weights[] = 30;
         }
         
-        // Component 2: Milestones Progress
+        // Component 3: Milestones Progress
         $totalMilestones = $this->milestones()->count();
         if ($totalMilestones > 0) {
             $completedMilestones = $this->milestones()->where('is_completed', true)->count();
             $milestoneProgress = ($completedMilestones / $totalMilestones) * 100;
             $components[] = $milestoneProgress;
-            $weights[] = 40;
+            $weights[] = 30;
         }
         
-        // Component 3: Final Completion Progress (project or assessment)
+        // Component 4: Final Completion Progress (project or assessment)
         if ($this->completion_type) {
             $finalProgress = 0;
             if ($this->completion_type === 'final_project' && $this->isFinalProjectSubmitted()) {
@@ -110,7 +122,7 @@ class LearningGoal extends Model
                 $finalProgress = 100;
             }
             $components[] = $finalProgress;
-            $weights[] = 20;
+            $weights[] = 10;
         }
         
         // Calculate weighted average

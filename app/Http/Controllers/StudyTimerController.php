@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StudySession;
+use App\Models\DailyStudySession;
 use App\Models\LearningGoal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +11,7 @@ class StudyTimerController extends Controller
 {
     /**
      * Save study session from timer
+     * @deprecated - Use TimeTrackingController::trackGoalTime instead
      */
     public function save(Request $request)
     {
@@ -25,25 +26,12 @@ class StudyTimerController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Get or create study session for this goal
-        $session = StudySession::firstOrCreate([
-            'user_id' => Auth::id(),
-            'learning_goal_id' => $goal->id,
-        ], [
-            'session_logs' => [],
-        ]);
-
-        // Add study minutes (with cap at daily_target_minutes)
-        $totalMinutes = $session->addStudyMinutes(
-            $validated['date'],
-            $validated['duration_minutes']
-        );
-
+        // This is now handled by TimeTrackingService
+        // But keep for backward compatibility
+        
         return response()->json([
             'success' => true,
-            'total_minutes_today' => $totalMinutes,
-            'target_reached' => $session->isTodayTargetReached(),
-            'days_completed' => $goal->fresh()->days_completed,
+            'message' => 'Please use /api/learning-goals/{goal}/track-time endpoint',
         ]);
     }
 
@@ -56,11 +44,11 @@ class StudyTimerController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        $session = StudySession::where('user_id', Auth::id())
-            ->where('learning_goal_id', $goalId)
-            ->first();
-
-        $todayMinutes = $session ? $session->getTodayMinutes() : 0;
+        // Get today's goal time from daily_study_sessions
+        $session = DailyStudySession::getTodaySession(Auth::id());
+        $todaySeconds = $session->getTodayTimeFor('goal', $goalId);
+        $todayMinutes = floor($todaySeconds / 60);
+        
         $targetMinutes = $goal->daily_target_minutes ?? 0;
 
         return response()->json([
@@ -80,13 +68,24 @@ class StudyTimerController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        $session = StudySession::where('user_id', Auth::id())
-            ->where('learning_goal_id', $goalId)
-            ->first();
+        // Get goal history from daily_study_sessions
+        $sessionLogs = DailyStudySession::getGoalHistory(Auth::id(), $goalId);
+        
+        // Calculate days completed
+        $daysCompleted = 0;
+        $targetMinutes = $goal->daily_target_minutes ?? 0;
+        
+        if ($targetMinutes > 0) {
+            $daysCompleted = DailyStudySession::countGoalTargetDays(
+                Auth::id(),
+                $goalId,
+                $targetMinutes
+            );
+        }
 
         return response()->json([
-            'session_logs' => $session ? $session->session_logs : [],
-            'days_completed' => $goal->days_completed,
+            'session_logs' => $sessionLogs,
+            'days_completed' => $daysCompleted,
             'target_days' => $goal->target_days,
         ]);
     }

@@ -115,6 +115,9 @@ class ProgressController extends Controller
             ->orderBy('completed_at', 'desc')
             ->get()
             ->pluck('completed_at')
+            ->filter(function($date) {
+                return $date !== null;
+            })
             ->map(function($date) {
                 return $date->format('Y-m-d');
             })

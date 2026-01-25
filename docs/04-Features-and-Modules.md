@@ -1778,3 +1778,72 @@ Security Configuration:
 **Feature Categories:** 10
 
 ---
+
+## ⏱️ Active Study Time Tracking System (Detail)
+
+### Overview
+Sistem time tracking otomatis yang hanya menghitung waktu belajar AKTIF siswa dengan monitoring:
+- Tab visibility (halaman aktif/tidak)
+- User activity (mouse, keyboard, scroll)
+- Idle detection (3 menit tanpa aktivitas)
+- Window focus state
+
+### Database Schema
+
+#### 1. `lesson_completions`
+```sql
+-- Field baru
+last_time_sync TIMESTAMP NULL  -- Kapan terakhir sync ke enrollment
+-- Field existing yang digunakan
+time_spent_seconds INT DEFAULT 0  -- Total waktu aktif (detik)
+last_accessed_at TIMESTAMP NULL
+```
+#### 2. `enrollments`
+```sql
+-- Field existing yang digunakan
+total_study_minutes INT DEFAULT 0  -- Aggregate dari lesson completions
+```
+#### 3. `learning_goals`
+```sql
+-- Field baru
+total_study_seconds INT DEFAULT 0   -- Total waktu belajar (detik)
+last_study_at TIMESTAMP NULL        -- Terakhir belajar
+```
+
+### Data Flow
+
+#### Lesson Time Tracking
+```
+1. User buka lesson → JavaScript tracker START
+2. Setiap 30 detik (jika aktif) → POST /api/lessons/{id}/track-time
+3. Backend: Atomic increment lesson_completions.time_spent_seconds
+4. Probabilistic sync (10% chance) → Aggregate ke enrollment.total_study_minutes
+5. On lesson complete → Force sync semua pending time
+```
+#### Learning Goal Time Tracking
+```
+1. User di goal page → JavaScript tracker START
+2. Setiap 60 detik (jika aktif) → POST /api/learning-goals/{id}/track-time
+3. Backend: Atomic increment learning_goals.total_study_seconds
+4. Progress auto-recalculate berdasarkan study time vs target
+```
+
+### API Endpoints
+
+#### Lesson Tracking
+**POST /api/lessons/{lesson}/track-time**
+- Body: `{ seconds: <int> }`
+- Response: `{ success: true, total_time: <int> }`
+
+#### Learning Goal Tracking
+**POST /api/learning-goals/{goal}/track-time**
+- Body: `{ seconds: <int> }`
+- Response: `{ success: true, total_time: <int> }`
+
+### Frontend Implementation
+- JavaScript tracker aktif hanya jika tab & window aktif
+- Idle >3 menit = auto-pause
+- Sync otomatis & probabilistik untuk efisiensi
+- Progress bar & stat cards update real-time
+
+---

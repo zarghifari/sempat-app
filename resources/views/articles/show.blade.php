@@ -2,7 +2,44 @@
 
 @section('title', $article['title'])
 
+@push('styles')
+<style>
+.reading-timer {
+    position: fixed;
+    top: 80px;
+    right: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 40;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    animation: fadeIn 0.3s ease-in;
+}
+.reading-timer .timer-label {
+    font-size: 10px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+@endpush
+
 @section('content')
+<!-- Reading Timer Display - GLOBAL for all articles today -->
+<div class="reading-timer">
+    <div class="timer-label">📚 All Articles Today</div>
+    <div id="article-timer">00:00</div>
+</div>
+
 <div class="px-4">
     <!-- Article Header -->
     <div class="bg-gradient-to-br from-{{ $article['category_color'] }}-50 to-white rounded-2xl p-6 mb-6">
@@ -446,4 +483,80 @@ function showToast(message, type = 'success') {
     }, 100);
 @endif
 </script>
+
+@push('scripts')
+<script>
+// Initialize Study Time Tracker for Article (GLOBAL TIMER)
+document.addEventListener('DOMContentLoaded', function() {
+    const articleId = {{ $article['id'] }};
+    
+    // Initialize tracker with GLOBAL article timer config
+    // All articles share the same timer for today
+    // resourceId = 0 means "global" - same localStorage key for all articles
+    const tracker = new StudyTimeTracker({
+        resourceType: 'article-global', // Global timer
+        resourceId: 0, // ← GLOBAL: Same for all articles = shared localStorage
+        actualArticleId: articleId, // Track actual article for API
+        apiEndpoint: `/api/articles/${articleId}/track-time`,
+        displayElement: 'article-timer',
+        idleThreshold: 5 * 60 * 1000, // 5 minutes idle for articles
+        syncInterval: 60 * 1000, // Sync every 60 seconds
+        minSyncSeconds: 5,
+    });
+
+    // Load TODAY'S GLOBAL articles time from API
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    console.log('[Article Tracker] CSRF Token:', csrfToken ? 'Found' : 'NOT FOUND');
+    console.log('[Article Tracker] Loading GLOBAL articles time for today');
+    
+    fetch(`/api/articles/${articleId}/time`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('[Article Tracker] Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('[Article Tracker] Global time loaded:', data);
+        console.log('[Article Tracker] Today total:', data.today_global_time || data.total_seconds);
+        console.log('[Article Tracker] This article:', data.this_article_time);
+        
+        // Use global time (all articles combined today)
+        const globalTime = data.today_global_time || data.total_seconds || 0;
+        tracker.totalSeconds = globalTime;
+        
+        // Mark as initialized - now safe to display and count time
+        tracker.isInitialized = true;
+        
+        // CRITICAL: Reset all timing variables to prevent spike from initialization delay
+        tracker.lastSync = Date.now();
+        tracker.startTime = Date.now();
+        tracker.accumulatedTime = 0; // Reset any accumulated time during init
+        tracker.totalActiveTime = 0;
+        
+        console.log(`[Article Tracker] 🎯 INITIALIZED! totalSeconds=${globalTime}, isInitialized=${tracker.isInitialized}`);
+        
+        // Force immediate display update
+        tracker.updateDisplay();
+    })
+    .catch(err => console.error('Failed to load article reading time:', err));
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        tracker.sync(true); // Force final sync
+        tracker.destroy();
+    });
+});
+</script>
+@endpush
 @endsection

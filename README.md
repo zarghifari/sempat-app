@@ -1,63 +1,96 @@
-# LMS SEMPAT - Learning Management System for SMA/SMK
+# LMS SEMPAT - Learning Management System
 
 ![Laravel](https://img.shields.io/badge/Laravel-12.46-red?logo=laravel)
 ![PHP](https://img.shields.io/badge/PHP-8.4-blue?logo=php)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
 
-A comprehensive Learning Management System (LMS) designed specifically for Indonesian high school students (SMA/SMK) with a focus on **Self-Directed Learning (SDL)**.
+Sistem pembelajaran digital modern untuk SMA/SMK Indonesia, mendukung **Self-Directed Learning** (SDL) dengan dua mode utama: Facilitated (FSDL) & Self-Paced (SPSDL).
 
-## 🎯 Key Features
+---
 
-### 📚 Dual Learning Modes
-- **Facilitated Self-Directed Learning (FSDL)**: Structured learning with teacher guidance
-  - Hierarchical organization (Modules → Lessons → Contents)
-  - Multiple content types (text, video, audio, interactive)
-  - Progress tracking and prerequisites
-  
-- **Self-Paced Self-Directed Learning (SPSDL)**: Independent article-based learning
-  - Flexible pacing
-  - Personalized recommendations
-  - Rich content discovery
+## 🚀 Fitur Utama
 
-### 📄 Document Import & Transformation
-- Import `.docx` and `.doc` files
-- Automatic HTML transformation
-- Media extraction and optimization
-- Queue-based processing for optimal performance
+- **Dual Learning Modes**
+  - Facilitated Self-Directed Learning (FSDL): Kursus terstruktur, progress tracking, prerequisite, quiz, analytics
+  - Self-Paced Self-Directed Learning (SPSDL): Artikel mandiri, rekomendasi, bookmark, catatan
+- **Document Import**: Import & transformasi .docx/.doc ke HTML, media extraction, queue processing
+- **Learning Goals & Journal**: Target belajar, refleksi, auto time tracking
+- **Quiz & Assessment**: MCQ, Essay, auto/manual grading, feedback, analytics
+- **Student Progress Monitoring**: Dashboard real-time, leaderboard, detail per siswa, auto-refresh
+- **Teacher/Admin Dashboard**: Action items, quick stats, analytics mini, grading, quick access
+- **Performance Optimization**: Redis cache, batch queries, eager loading, API terpisah, auto cache invalidation
+- **Role-based Access**: Admin, Teacher, Student
+- **Mobile-First Design**: Responsive, siap untuk pengembangan mobile app
 
-### 🎓 Self-Directed Learning Tools
-- **Learning Goals**: Set and track learning objectives
-- **Learning Journal**: Reflection and documentation
-- **Study Sessions**: Automatic time tracking
-- **Bookmarks & Notes**: Organize content and personal notes
-- **Progress Visualization**: Personal analytics dashboard
+---
 
-### ✅ Assessment System
-- Multiple question types (MCQ, True/False, Essay, etc.)
-- Auto-grading and manual grading
-- Self-assessment tools
-- Detailed feedback and analytics
+## ⚡ Quick Start
 
-### 💬 Communication & Collaboration
-- Discussion forums with moderation
-- Direct messaging
-- Multi-channel notifications
-- Real-time updates
-
-## 🚀 Quick Start
-
-### Prerequisites
-- PHP 8.2+ (Currently using PHP 8.4.12)
+### Prasyarat
+- PHP 8.2+ (disarankan 8.4+)
 - Composer
 - MySQL 8.0+
 - Node.js & NPM
-- XAMPP (for Windows development) or appropriate web server
+- XAMPP (Windows) atau web server lain
 
-### Installation
-
-1. **Clone the repository**
+### Instalasi
+1. **Clone repository**
    ```bash
    git clone <repository-url>
+   ```
+2. **Install dependencies**
+   ```bash
+   composer install
+   npm install && npm run build
+   ```
+3. **Copy .env & generate key**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+4. **Setup database**
+   - Buat database MySQL
+   - Edit `.env` sesuai konfigurasi
+   - Jalankan migrasi & seeder:
+     ```bash
+     php artisan migrate --seed
+     ```
+5. **Jalankan server**
+   ```bash
+   php artisan serve
+   ```
+
+---
+
+## 📖 Dokumentasi Teknis
+
+- [Dokumentasi Utama & Index](docs/README.md)
+- [Arsitektur Sistem](docs/01-System-Architecture-Overview.md)
+- [Fitur & Modul](docs/04-Features-and-Modules.md)
+- [API & Optimasi](docs/03-API-Design-and-Optimization.md)
+- [Dashboard Guru/Admin](docs/TEACHER-ADMIN-DASHBOARD.md)
+- [Quiz Implementation](docs/QUIZ-IMPLEMENTATION.md)
+- [Role Structure Update](docs/ROLE-STRUCTURE-UPDATE.md)
+- [Development Roadmap](docs/07-Development-Roadmap.md)
+
+---
+
+## 🏆 Highlight Fitur & Optimasi Terbaru
+
+- **Student Progress Monitoring**: Real-time, auto-refresh, leaderboard, detail mingguan
+- **Teacher Dashboard**: Action items, quick stats, mini analytics, grading, responsive
+- **Redis Cache**: 200x lebih cepat, batch queries, auto invalidation
+- **Eager Loading**: Eliminasi N+1 queries, API super cepat
+- **Document Import**: .docx/.doc ke HTML, media extraction, queue
+- **Learning Goals & Journal**: Target belajar, refleksi, auto time tracking
+- **Quiz System**: MCQ, Essay, auto/manual grading, feedback
+- **Role-based Access**: Admin, Teacher, Student
+
+---
+
+## 🛠️ Kontribusi & Pengembangan
+
+Lihat [docs/README.md](docs/README.md) untuk panduan teknis lengkap, arsitektur, dan pengembangan fitur lanjutan.
    cd sempat-app
    ```
 

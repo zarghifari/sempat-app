@@ -5,11 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Lesson;
 use App\Models\LessonCompletion;
 use App\Models\Enrollment;
+use App\Services\TimeTrackingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LessonController extends Controller
 {
+    protected TimeTrackingService $trackingService;
+
+    public function __construct(TimeTrackingService $trackingService)
+    {
+        $this->trackingService = $trackingService;
+    }
     /**
      * Display the specified lesson
      */
@@ -138,10 +145,12 @@ class LessonController extends Controller
         // Mark as complete
         $completion->update([
             'status' => 'completed',
-            'completion_percentage' => 100,
+            'progress_percentage' => 100,
             'completed_at' => now(),
-            'time_spent_minutes' => $completion->time_spent_minutes + $lesson->duration_minutes,
         ]);
+        
+        // Force sync all pending time to enrollment
+        $this->trackingService->forceSyncEnrollment($enrollment->id);
         
         // Update enrollment progress
         $this->updateEnrollmentProgress($enrollment);
@@ -169,7 +178,7 @@ class LessonController extends Controller
         
         $enrollment->update([
             'progress_percentage' => $progressPercentage,
-            'lessons_completed' => $completedLessons,
+            'completed_lessons' => $completedLessons,
             'last_accessed_at' => now(),
         ]);
         
