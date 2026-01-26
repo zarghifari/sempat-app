@@ -14,7 +14,7 @@ Sistem pembelajaran digital modern untuk SMA/SMK Indonesia, mendukung **Self-Dir
   - Facilitated Self-Directed Learning (FSDL): Kursus terstruktur, progress tracking, prerequisite, quiz, analytics
   - Self-Paced Self-Directed Learning (SPSDL): Artikel mandiri, rekomendasi, bookmark, catatan
 - **Document Import**: Import & transformasi .docx/.doc ke HTML, media extraction, queue processing
-- **Learning Goals & Journal**: Target belajar, refleksi, auto time tracking
+- **Learning Goals & Journal**: Target belajar harian, progress dari lessons + articles, refleksi, auto tracking
 - **Quiz & Assessment**: MCQ, Essay, auto/manual grading, feedback, analytics
 - **Student Progress Monitoring**: Dashboard real-time, leaderboard, detail per siswa, auto-refresh
 - **Teacher/Admin Dashboard**: Action items, quick stats, analytics mini, grading, quick access
@@ -77,12 +77,12 @@ Sistem pembelajaran digital modern untuk SMA/SMK Indonesia, mendukung **Self-Dir
 
 ## 🏆 Highlight Fitur & Optimasi Terbaru
 
+- **Learning Goals Redesign**: Target harian otomatis, progress dari lessons + articles (single source of truth)
 - **Student Progress Monitoring**: Real-time, auto-refresh, leaderboard, detail mingguan
 - **Teacher Dashboard**: Action items, quick stats, mini analytics, grading, responsive
 - **Redis Cache**: 200x lebih cepat, batch queries, auto invalidation
 - **Eager Loading**: Eliminasi N+1 queries, API super cepat
 - **Document Import**: .docx/.doc ke HTML, media extraction, queue
-- **Learning Goals & Journal**: Target belajar, refleksi, auto time tracking
 - **Quiz System**: MCQ, Essay, auto/manual grading, feedback
 - **Role-based Access**: Admin, Teacher, Student
 

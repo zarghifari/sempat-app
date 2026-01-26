@@ -65,31 +65,17 @@ class TimeTrackingController extends Controller
     /**
      * Track learning goal study time
      * POST /api/learning-goals/{goal}/track-time
+     * 
+     * @deprecated Learning goals no longer track time directly.
+     * Time is tracked from lessons and articles only.
      */
     public function trackGoalTime(Request $request, LearningGoal $goal)
     {
-        $validated = $request->validate([
-            'seconds' => 'required|integer|min:1|max:300',
-            'is_active' => 'boolean',
-        ]);
-
-        $user = Auth::user();
-
-        // Verify ownership
-        if ($goal->user_id !== $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        $result = $this->trackingService->trackGoalTime(
-            $user->id,
-            $goal->id,
-            $validated['seconds']
-        );
-
-        return response()->json($result);
+        return response()->json([
+            'success' => false,
+            'message' => 'Learning goals no longer track time directly. Time is automatically tracked from your lessons and articles.',
+            'today_minutes' => $goal->getTodayProgress()['today_minutes'],
+        ], 400);
     }
 
     /**
@@ -137,7 +123,7 @@ class TimeTrackingController extends Controller
     }
 
     /**
-     * Get current learning goal time
+     * Get current learning goal time (from lessons + articles)
      * GET /api/learning-goals/{goal}/time
      */
     public function getGoalTime(LearningGoal $goal)
@@ -148,11 +134,10 @@ class TimeTrackingController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        return response()->json([
-            'total_seconds' => $goal->total_study_seconds ?? 0,
-            'formatted' => $this->trackingService->formatTime($goal->total_study_seconds ?? 0),
-            'last_study' => $goal->last_study_at?->toIso8601String(),
-        ]);
+        // Get today's progress from lessons + articles
+        $progress = $goal->getTodayProgress();
+
+        return response()->json($progress);
     }
 
     /**

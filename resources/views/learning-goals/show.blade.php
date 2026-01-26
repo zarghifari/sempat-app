@@ -54,7 +54,7 @@
             </div>
 
             <!-- Goal Info -->
-            <div class="grid grid-cols-4 gap-2">
+            <div class="grid grid-cols-3 gap-2">
                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
                     <div class="text-xs text-purple-100 mb-1">Category</div>
                     <div class="font-semibold text-sm capitalize">
@@ -81,12 +81,6 @@
                         @else
                             📌 Low
                         @endif
-                    </div>
-                </div>
-                <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-                    <div class="text-xs text-purple-100 mb-1">Study Time</div>
-                    <div class="font-semibold text-sm" id="goal-study-timer">
-                        {{ gmdate('H:i:s', $learningGoal->total_study_seconds ?? 0) }}
                     </div>
                 </div>
                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
@@ -123,7 +117,7 @@
                 <div class="text-center mb-4">
                     <div class="text-sm text-purple-600 font-medium mb-2">📊 Today's Progress</div>
                     <div class="text-xs text-gray-500 mb-3">
-                        ⚡ Auto-tracks your study time from reading articles
+                        ⚡ Auto-tracks from lessons and articles
                     </div>
                     <div class="flex items-center justify-center gap-4 mb-3">
                         <div class="text-center">
@@ -155,7 +149,7 @@
                         </div>
                     </div>
                     <div class="mt-3 flex items-center justify-center gap-2">
-                        <span id="trackingStatus" class="text-xs text-green-600 font-medium">✓ Auto-tracking from articles</span>
+                        <span id="trackingStatus" class="text-xs text-green-600 font-medium">✓ Auto-tracking from lessons & articles</span>
                         <span id="targetAchieved" class="hidden px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
                             🎯 Target Achieved!
                         </span>
@@ -176,13 +170,12 @@
                     <div class="flex-1">
                         <h4 class="font-semibold text-blue-800 text-sm mb-1">How Daily Tracking Works</h4>
                         <p class="text-xs text-blue-700 leading-relaxed">
-                            Your daily study time is automatically tracked when you read articles in the library. 
+                            Your daily study time is automatically tracked from your learning activities: 
+                            <strong>📚 Lessons</strong> and <strong>📄 Articles</strong>. 
                             @if($learningGoal->daily_target_minutes)
-                            The timer syncs with your article reading sessions, so you can focus on learning while 
-                            we track your progress toward your {{ $learningGoal->daily_target_minutes }}-minute daily goal!
+                            Focus on learning, and we'll track your progress toward your {{ $learningGoal->daily_target_minutes }}-minute daily goal!
                             @else
-                            The timer syncs with your article reading sessions, so you can focus on learning while 
-                            we track your study time. Set a daily target to track your progress!
+                            Focus on learning, and we'll track your total study time. Set a daily target to track your progress!
                             @endif
                         </p>
                     </div>
@@ -1081,76 +1074,22 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
-// Save timer on page unload
+// Save state on page unload
 window.addEventListener('beforeunload', function() {
-    if (goalTracker) {
-        goalTracker.sync(true); // Force final sync
-        goalTracker.destroy();
-    }
+    // No need to track learning goal time anymore
+    // Learning goals only set targets, actual time comes from lessons + articles
 });
-
-// Initialize Study Time Tracker for Learning Goal
-const goalTracker = new StudyTimeTracker({
-    resourceType: 'learning-goal',
-    resourceId: {{ $learningGoal->id }},
-    apiEndpoint: '/api/learning-goals/{{ $learningGoal->id }}/track-time',
-    displayElement: 'goal-study-timer',
-    idleThreshold: 5 * 60 * 1000, // 5 minutes for goals (longer idle threshold)
-    syncInterval: 60 * 1000, // 60 seconds
-    minSyncSeconds: 10,
-});
-
-// Load initial time from server
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-console.log('[Goal Tracker] CSRF Token:', csrfToken ? 'Found' : 'NOT FOUND');
-console.log('[Goal Tracker] Loading time for goal {{ $learningGoal->id }}...');
-
-fetch('/api/learning-goals/{{ $learningGoal->id }}/time', {
-    method: 'GET',
-    credentials: 'same-origin',
-    headers: { 
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-})
-.then(res => {
-    console.log('[Goal Tracker] Response status:', res.status);
-    if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-    return res.json();
-})
-.then(data => {
-    console.log('[Goal Tracker] Time loaded:', data);
-    if (data.total_seconds !== undefined) {
-        goalTracker.totalSeconds = data.total_seconds;
-        
-        // Mark as initialized
-        goalTracker.isInitialized = true;
-        
-        // CRITICAL: Reset all timing variables to prevent spike from initialization delay
-        goalTracker.lastSync = Date.now();
-        goalTracker.startTime = Date.now();
-        goalTracker.accumulatedTime = 0; // Reset any accumulated time during init
-        goalTracker.totalActiveTime = 0;
-        
-        console.log(`[Goal Tracker] 🎯 INITIALIZED! totalSeconds=${data.total_seconds}, isInitialized=true`);
-        
-        goalTracker.updateDisplay();
-    }
-})
-.catch(err => console.error('Failed to load goal time:', err));
 
 @endif
 // ============================================================
-// DAILY STUDY TIME TRACKING (Uses today_global_time from Articles)
+// DAILY STUDY TIME TRACKING (From Lessons + Articles)
 // ============================================================
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
 let dailyTargetReached = false;
 const dailyTargetMinutes = {{ $learningGoal->daily_target_minutes ?? 0 }};
 const currentDate = new Date().toDateString();
-let todayGlobalSeconds = 0; // Today's total study time (from articles)
+let todayGlobalSeconds = 0; // Today's total study time (from lessons + articles)
 
 @if($learningGoal->daily_target_minutes)
 // Check if target already reached today (from localStorage)
@@ -1160,10 +1099,10 @@ if (targetReachedToday === 'true') {
 }
 @endif
 
-// Fetch today's global study time from API
+// Fetch today's study time from Learning Goal API (lessons + articles)
 function fetchDailyStudyTime() {
-    console.log('[Daily Progress] Fetching from:', '/api/daily-study-time');
-    fetch('/api/daily-study-time', {
+    console.log('[Daily Progress] Fetching from:', '/api/learning-goals/{{ $learningGoal->id }}/time');
+    fetch('/api/learning-goals/{{ $learningGoal->id }}/time', {
         method: 'GET',
         credentials: 'same-origin',
         headers: { 
@@ -1182,10 +1121,19 @@ function fetchDailyStudyTime() {
     })
     .then(data => {
         console.log('[Daily Progress] API Response:', data);
-        console.log('[Daily Progress] today_total_seconds:', data.today_total_seconds);
-        console.log('[Daily Progress] today_total_minutes:', data.today_total_minutes);
-        todayGlobalSeconds = data.today_total_seconds || 0;
+        console.log('[Daily Progress] today_minutes:', data.today_minutes);
+        console.log('[Daily Progress] breakdown:', data.breakdown);
+        
+        // Convert minutes to seconds for consistency
+        todayGlobalSeconds = (data.today_minutes || 0) * 60;
         console.log('[Daily Progress] Setting todayGlobalSeconds to:', todayGlobalSeconds);
+        
+        // Update breakdown info if available
+        if (data.breakdown) {
+            console.log('[Daily Progress] Lessons:', data.breakdown.lessons_minutes + 'm');
+            console.log('[Daily Progress] Articles:', data.breakdown.articles_minutes + 'm');
+        }
+        
         updateDailyProgress();
     })
     .catch(err => {
@@ -1259,15 +1207,10 @@ function updateDailyProgress() {
         }
     }
     
-    // Update tracking status (show if articles are being tracked)
+    // Update tracking status
     const trackingStatusEl = document.getElementById('trackingStatus');
     if (trackingStatusEl) {
-        const articlesTracking = document.visibilityState === 'visible';
-        if (articlesTracking) {
-            trackingStatusEl.innerHTML = '✓ <span class="text-green-600">Auto-tracking from articles</span>';
-        } else {
-            trackingStatusEl.innerHTML = '⏸️ <span class="text-gray-600">Paused (tab hidden)</span>';
-        }
+        trackingStatusEl.innerHTML = '✓ <span class="text-green-600">Auto-tracking from lessons & articles</span>';
     }
 }
 

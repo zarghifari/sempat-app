@@ -10,33 +10,8 @@ use Illuminate\Support\Facades\Auth;
 class StudyTimerController extends Controller
 {
     /**
-     * Save study session from timer
-     * @deprecated - Use TimeTrackingController::trackGoalTime instead
-     */
-    public function save(Request $request)
-    {
-        $validated = $request->validate([
-            'goal_id' => 'required|exists:learning_goals,id',
-            'date' => 'required|date_format:Y-m-d',
-            'duration_minutes' => 'required|integer|min:1',
-        ]);
-
-        // Verify goal belongs to user
-        $goal = LearningGoal::where('id', $validated['goal_id'])
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
-        // This is now handled by TimeTrackingService
-        // But keep for backward compatibility
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Please use /api/learning-goals/{goal}/track-time endpoint',
-        ]);
-    }
-
-    /**
      * Get current session status for a goal
+     * Progress dihitung dari total waktu belajar di lessons + articles hari ini
      */
     public function getStatus(Request $request, $goalId)
     {
@@ -44,23 +19,15 @@ class StudyTimerController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Get today's goal time from daily_study_sessions
-        $session = DailyStudySession::getTodaySession(Auth::id());
-        $todaySeconds = $session->getTodayTimeFor('goal', $goalId);
-        $todayMinutes = floor($todaySeconds / 60);
-        
-        $targetMinutes = $goal->daily_target_minutes ?? 0;
+        // Get today's progress dari DailyStudySession
+        $progress = $goal->getTodayProgress();
 
-        return response()->json([
-            'today_minutes' => $todayMinutes,
-            'target_minutes' => $targetMinutes,
-            'remaining_minutes' => max(0, $targetMinutes - $todayMinutes),
-            'target_reached' => $todayMinutes >= $targetMinutes,
-        ]);
+        return response()->json($progress);
     }
 
     /**
-     * Get session logs for a goal
+     * Get study logs/history
+     * Menampilkan histori hari-hari yang mencapai target
      */
     public function getLogs(Request $request, $goalId)
     {
@@ -68,25 +35,35 @@ class StudyTimerController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Get goal history from daily_study_sessions
-        $sessionLogs = DailyStudySession::getGoalHistory(Auth::id(), $goalId);
-        
-        // Calculate days completed
-        $daysCompleted = 0;
         $targetMinutes = $goal->daily_target_minutes ?? 0;
+        $targetSeconds = $targetMinutes * 60;
         
-        if ($targetMinutes > 0) {
-            $daysCompleted = DailyStudySession::countGoalTargetDays(
-                Auth::id(),
-                $goalId,
-                $targetMinutes
-            );
-        }
+        // Get last 30 days study sessions
+        $sessions = DailyStudySession::where('user_id', Auth::id())
+            ->where('study_date', '>=', now()->subDays(30))
+            ->orderBy('study_date', 'desc')
+            ->get()
+            ->map(function ($session) use ($targetSeconds) {
+                $totalMinutes = floor($session->total_study_time / 60);
+                $targetReached = $targetSeconds > 0 && $session->total_study_time >= $targetSeconds;
+                
+                return [
+                    'date' => $session->study_date->format('Y-m-d'),
+                    'total_minutes' => $totalMinutes,
+                    'lessons_minutes' => floor($session->total_lessons_time / 60),
+                    'articles_minutes' => floor($session->total_articles_time / 60),
+                    'target_reached' => $targetReached,
+                ];
+            });
+
+        // Count days completed
+        $daysCompleted = $sessions->where('target_reached', true)->count();
 
         return response()->json([
-            'session_logs' => $sessionLogs,
+            'session_logs' => $sessions,
             'days_completed' => $daysCompleted,
             'target_days' => $goal->target_days,
+            'target_minutes' => $targetMinutes,
         ]);
     }
 }
