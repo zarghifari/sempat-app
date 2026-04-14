@@ -14,6 +14,12 @@ use App\Http\Controllers\TeacherDashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\DeployController;
+
+// Bisa batasi ke APP_ENV=production hanya jika perlu
+Route::get('/deploy/run', [DeployController::class, 'run'])
+    ->middleware(['throttle:3,1']); // batasi request
+
 Route::get('/', function () {
     // If user is already authenticated, redirect to dashboard
     if (Auth::check()) {

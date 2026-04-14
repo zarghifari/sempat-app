@@ -21,6 +21,9 @@ class DocumentTransformService
 
         $html = file_get_contents($htmlPath);
         
+        // Pre-clean HTML before parsing - remove all Word conditional comments
+        $html = $this->stripWordConditionalComments($html);
+        
         // Parse HTML
         $doc = new DOMDocument();
         @$doc->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
@@ -59,6 +62,33 @@ class DocumentTransformService
             'reading_time' => $readingTime,
             'type' => 'text', // or 'document'
         ];
+    }
+
+    /**
+     * Strip all Microsoft Word conditional comments from raw HTML
+     * Must be done before DOMDocument parsing
+     */
+    protected function stripWordConditionalComments(string $html): string
+    {
+        // Remove standard HTML conditional comments (<!--[if ...]>...<![endif]-->)
+        $html = preg_replace('/<!--\[if[^\]]*\]>.*?<!\[endif\]-->/si', '', $html);
+        
+        // Remove downlevel-hidden conditional comments (<!--[if ...]><!--> ... <!--<![endif]-->)
+        $html = preg_replace('/<!--\[if[^\]]*\]><!-->(.*?)<!--<!\[endif\]-->/si', '$1', $html);
+        
+        // Remove bare conditional comment tags (common in Word HTML)
+        $html = preg_replace('/<!\[if[^\]]*\]>/i', '', $html);
+        $html = preg_replace('/<!\[endif\]>/i', '', $html);
+        
+        // Remove any remaining conditional comment patterns
+        $html = preg_replace('/<!--\[if[^\]]*\]>/i', '', $html);
+        $html = preg_replace('/<!\[endif\]-->/i', '', $html);
+        
+        // Remove VML and Office namespace declarations
+        $html = preg_replace('/<\?xml[^>]*>/i', '', $html);
+        $html = preg_replace('/xmlns:[^=]*="[^"]*"/i', '', $html);
+        
+        return $html;
     }
 
     /**
@@ -154,10 +184,12 @@ class DocumentTransformService
         
         // Clean MS Word specific classes and styles
         $content = preg_replace('/<(\/?)o:p>/i', '', $content); // Remove <o:p> tags
+        $content = preg_replace('/<(\/?)v:[^>]*>/i', '', $content); // Remove VML tags
         $content = preg_replace('/class="Mso[^"]*"/i', '', $content); // Remove MsoNormal classes
         $content = preg_replace('/style="[^"]*mso-[^"]*"/i', '', $content); // Remove mso-* styles
         $content = preg_replace('/\s+style=""/', '', $content); // Remove empty style attributes
         $content = preg_replace('/<span[^>]*>\s*<\/span>/i', '', $content); // Remove empty spans
+        $content = preg_replace('/<(\/?)w:[^>]*>/i', '', $content); // Remove Word XML tags
         
         // Convert YouTube links to embed
         $content = $this->convertYouTubeLinksToEmbed($content);

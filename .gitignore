@@ -1,8 +1,10 @@
 *.log
 .DS_Store
+# .env aktif - tidak di-commit (berisi credentials lokal)
 .env
 .env.backup
-.env.production
+# Template env di-commit agar bisa di-clone dan langsung switch environment
+# .env.local, .env.staging, .env.production → sengaja di-track git
 .phpactor.json
 .phpunit.result.cache
 /.fleet

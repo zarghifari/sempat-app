@@ -26,39 +26,67 @@ Sistem pembelajaran digital modern untuk SMA/SMK Indonesia, mendukung **Self-Dir
 
 ## ⚡ Quick Start
 
+### 📋 Panduan Setup
+
+**Pilih sesuai kebutuhan Anda:**
+
+- 🚀 **[Quick Start (5 Menit)](QUICKSTART.md)** - Setup cepat untuk mulai development
+- 🖥️ **[Setup XAMPP Lengkap](XAMPP-SETUP.md)** - Panduan detail untuk XAMPP Windows
+- 🌐 **[Production Setup](PRODUCTION-SETUP.md)** - Deploy ke server production
+- 📦 **[Deployment Guide](DEPLOYMENT-GUIDE.md)** - Panduan deployment existing
+- 🚀 **[Deploy Checklist](DEPLOY-CHECKLIST.md)** - Checklist deployment production
+- 💻 **[WinSCP Deploy Guide](WINSCP-DEPLOY-GUIDE.md)** - Deploy dengan WinSCP (Windows)
+- ⚡ **[Deploy with ZIP](DEPLOY-WITH-ZIP.md)** - Deploy super cepat dengan ZIP (RECOMMENDED!)
+
 ### Prasyarat
 - PHP 8.2+ (disarankan 8.4+)
 - Composer
 - MySQL 8.0+
-- Node.js & NPM
+- Node.js 18+ & NPM
 - XAMPP (Windows) atau web server lain
 
-### Instalasi
-1. **Clone repository**
-   ```bash
-   git clone <repository-url>
-   ```
-2. **Install dependencies**
-   ```bash
-   composer install
-   npm install && npm run build
-   ```
-3. **Copy .env & generate key**
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-4. **Setup database**
-   - Buat database MySQL
-   - Edit `.env` sesuai konfigurasi
-   - Jalankan migrasi & seeder:
-     ```bash
-     php artisan migrate --seed
-     ```
-5. **Jalankan server**
-   ```bash
-   php artisan serve
-   ```
+### Instalasi Singkat
+```bash
+# 1. Install dependencies
+composer install
+npm install
+
+# 2. Switch ke environment local (opsional, jika file .env.local tersedia)
+# Windows: switch-env.bat
+# PowerShell: .\switch-env.ps1
+# Linux/Mac: ./switch-env.sh
+
+# 3. Setup database
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+
+# 4. Build assets
+npm run build
+
+# 5. Akses aplikasi
+# Dengan Virtual Host: http://sempat.test
+# Tanpa Virtual Host: http://localhost/sempat-app/public
+```
+
+### Environment Switcher
+
+Gunakan script helper untuk beralih antara local dan production:
+
+**Windows (CMD):**
+```bash
+switch-env.bat
+```
+
+**Windows (PowerShell):**
+```bash
+.\switch-env.ps1
+```
+
+**Linux/Mac:**
+```bash
+./switch-env.sh
+```
 
 ---
 

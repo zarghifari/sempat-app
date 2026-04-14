@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+    /*    |--------------------------------------------------------------------------
+    | Deployment Token
+    |--------------------------------------------------------------------------
+    | This token is used to secure the deployment endpoint. It should be a
+    | random string that only your deployment scripts know. Set this in your ".env" file.
+    |
+    */
+    'deploy_token' => env('LMS123-DEPLOY-9981'),
 ];

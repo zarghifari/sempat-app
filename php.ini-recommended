@@ -1,0 +1,174 @@
+# PHP.ini Configuration Recommendations for XAMPP
+# Lokasi file: C:\xampp\php\php.ini
+
+# ========================================
+# Basic Settings
+# ========================================
+
+# Maximum execution time (detik)
+max_execution_time = 300
+
+# Maximum input time (detik)
+max_input_time = 300
+
+# Memory limit
+memory_limit = 256M
+
+# Maximum upload file size
+upload_max_filesize = 100M
+
+# Maximum POST data size
+post_max_size = 100M
+
+# Maximum number of files that can be uploaded
+max_file_uploads = 20
+
+# ========================================
+# Error Reporting
+# ========================================
+
+# Development
+error_reporting = E_ALL
+display_errors = On
+display_startup_errors = On
+log_errors = On
+
+# Production (comment out development settings above and use these):
+# error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
+# display_errors = Off
+# display_startup_errors = Off
+# log_errors = On
+
+# Error log location
+error_log = "C:/xampp/php/logs/php_error_log"
+
+# ========================================
+# Extensions (Required)
+# ========================================
+# Pastikan extension berikut TIDAK ada tanda ; di depannya
+
+extension=mysqli
+extension=pdo_mysql
+extension=mbstring
+extension=openssl
+extension=curl
+extension=fileinfo
+extension=gd
+extension=zip
+extension=xml
+extension=dom
+extension=xmlwriter
+extension=xmlreader
+extension=simplexml
+extension=intl
+extension=bcmath
+extension=soap
+extension=sockets
+
+# Optional tapi direkomendasikan
+extension=exif
+extension=ftp
+extension=imap
+
+# ========================================
+# OPcache (untuk performa lebih baik)
+# ========================================
+
+[opcache]
+; Enable/disable OPcache
+opcache.enable = 1
+opcache.enable_cli = 0
+
+; Memory consumption
+opcache.memory_consumption = 256
+
+; Interned strings buffer
+opcache.interned_strings_buffer = 16
+
+; Maximum cached files
+opcache.max_accelerated_files = 10000
+
+; Revalidate frequency (seconds) - 0 untuk development, 2+ untuk production
+opcache.revalidate_freq = 0
+
+; Fast shutdown
+opcache.fast_shutdown = 1
+
+# ========================================
+# Session Configuration
+# ========================================
+
+session.save_handler = files
+session.save_path = "C:/xampp/tmp"
+session.use_cookies = 1
+session.use_only_cookies = 1
+session.cookie_lifetime = 0
+session.cookie_httponly = 1
+session.gc_maxlifetime = 7200
+
+# ========================================
+# Date/Time
+# ========================================
+
+[Date]
+date.timezone = Asia/Jakarta
+
+# ========================================
+# Security Settings
+# ========================================
+
+# Disable dangerous functions
+disable_functions = exec,passthru,shell_exec,system,proc_open,popen
+
+# Hide PHP version in headers
+expose_php = Off
+
+# Allow URL fopen (needed for some Laravel features)
+allow_url_fopen = On
+allow_url_include = Off
+
+# ========================================
+# Output Buffering
+# ========================================
+
+output_buffering = 4096
+
+# ========================================
+# Realpath Cache (Performance)
+# ========================================
+
+realpath_cache_size = 4096k
+realpath_cache_ttl = 600
+
+# ========================================
+# Cara Mengaplikasikan:
+# ========================================
+# 1. Buka file C:\xampp\php\php.ini dengan text editor
+# 2. Cari setting di atas dan sesuaikan nilainya
+# 3. Save file
+# 4. Restart Apache di XAMPP Control Panel
+# 5. Verifikasi dengan membuat file phpinfo.php:
+#    <?php phpinfo(); ?>
+#    Akses: http://localhost/phpinfo.php
+
+# ========================================
+# Troubleshooting
+# ========================================
+
+# Jika error "extension not found":
+# - Pastikan file extension ada di C:\xampp\php\ext\
+# - Periksa extension_dir setting di php.ini
+
+# Jika upload file besar gagal:
+# - Periksa upload_max_filesize
+# - Periksa post_max_size (harus >= upload_max_filesize)
+# - Periksa max_execution_time
+
+# Jika session error:
+# - Periksa session.save_path folder exists dan writable
+# - Atau set SESSION_DRIVER=database di .env
+
+# Jika memory exhausted:
+# - Tingkatkan memory_limit
+# - Optimasi query database
+# - Enable OPcache

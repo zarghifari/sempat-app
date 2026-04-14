@@ -95,6 +95,16 @@ class DocumentImportService
         }
 
         $html .= '</div>';
+        
+        // Post-process: convert YouTube links to embeds
+        $html = $this->convertYouTubeLinksToEmbed($html);
+        
+        // Fix common double-encoding issues (Word often double-encodes)
+        $html = str_replace('&amp;amp;', '&amp;', $html);
+        $html = str_replace('&amp;quot;', '&quot;', $html);
+        $html = str_replace('&amp;#039;', '&#039;', $html);
+        $html = str_replace('&amp;lt;', '&lt;', $html);
+        $html = str_replace('&amp;gt;', '&gt;', $html);
 
         return $html;
     }
@@ -122,13 +132,13 @@ class DocumentImportService
 
         // Text elements
         if ($element instanceof Text) {
-            $text = htmlspecialchars($element->getText());
+            $text = $element->getText();
             $style = $this->getTextStyle($element);
             
             if ($style) {
-                $html .= '<span style="' . $style . '">' . $text . '</span>';
+                $html .= '<span style="' . $style . '">' . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '</span>';
             } else {
-                $html .= $text;
+                $html .= htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
             }
         }
         
@@ -162,7 +172,7 @@ class DocumentImportService
         
         // Other text containers
         elseif (method_exists($element, 'getText')) {
-            $text = htmlspecialchars($element->getText());
+            $text = htmlspecialchars($element->getText(), ENT_QUOTES, 'UTF-8');
             $html .= '<p>' . $text . '</p>';
         }
 
@@ -190,9 +200,13 @@ class DocumentImportService
                     $styles[] = 'font-style: italic';
                 }
                 
-                // Underline
-                if (method_exists($fontStyle, 'getUnderline') && $fontStyle->getUnderline()) {
-                    $styles[] = 'text-decoration: underline';
+                // Underline - only add if explicitly underlined (not 'none')
+                if (method_exists($fontStyle, 'getUnderline')) {
+                    $underline = $fontStyle->getUnderline();
+                    // Check if underline is not null/false/'none'/empty
+                    if ($underline && $underline !== 'none' && $underline !== false) {
+                        $styles[] = 'text-decoration: underline';
+                    }
                 }
                 
                 // Font size
@@ -284,6 +298,30 @@ class DocumentImportService
     }
 
     /**
+     * Convert YouTube links to embed iframes
+     */
+    protected function convertYouTubeLinksToEmbed(string $content): string
+    {
+        // Pattern to match YouTube URLs in <p> tags
+        $pattern = '/<p[^>]*>https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(\?[^<]*)?(.*?)<\/p>/i';
+        
+        $content = preg_replace_callback($pattern, function($matches) {
+            $videoId = $matches[3];
+            return '<div class="video-container my-4">
+                <iframe width="100%" height="315" 
+                    src="https://www.youtube.com/embed/' . $videoId . '" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen
+                    class="rounded-xl">
+                </iframe>
+            </div>';
+        }, $content);
+        
+        return $content;
+    }
+
+    /**
      * Create a lesson from imported document
      */
     public function createLessonFromImport(DocumentImport $import, int $moduleId, array $options = []): \App\Models\Lesson
@@ -296,13 +334,12 @@ class DocumentImportService
             'uuid' => (string) Str::uuid(),
             'module_id' => $moduleId,
             'title' => $options['title'] ?? $import->metadata['title'] ?? $import->original_filename,
-            'slug' => Str::slug($options['title'] ?? $import->metadata['title'] ?? $import->original_filename),
             'description' => $options['description'] ?? $import->metadata['description'] ?? null,
             'type' => 'document',
             'content' => $import->html_content,
             'order' => $options['order'] ?? 1,
             'duration_minutes' => $options['duration_minutes'] ?? ceil($import->word_count / 200), // Avg reading speed
-            'is_published' => $options['is_published'] ?? true,
+            'status' => $options['is_published'] ?? true ? 'published' : 'draft',
             'created_by' => $import->user_id,
         ]);
 

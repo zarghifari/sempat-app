@@ -338,12 +338,464 @@
             font-weight: 600;
         }
     </style>
+
+    <!-- Floating Video Info Button -->
+    <div id="floating-video-btn" class="fixed bottom-20 right-4 z-40 hidden animate-slide-up">
+        <button onclick="scrollToActiveVideo()" 
+                class="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full shadow-2xl px-4 py-3 flex items-center gap-3 hover:shadow-xl transition-all active:scale-95">
+            <div class="w-10 h-10 bg-red-800/50 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+                </svg>
+            </div>
+            <div class="text-left pr-2">
+                <div id="floating-video-title" class="text-xs font-semibold line-clamp-1 max-w-[150px]">Video</div>
+                <div id="floating-video-time" class="text-xs opacity-90 font-mono">0:00 / 0:00</div>
+            </div>
+        </button>
+    </div>
+
+    <style>
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+        }
+        .line-clamp-1 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
 @endsection
 
 @if ($lesson['is_enrolled'])
 @push('scripts')
     <script>
+        // ============================================================
+        // VIDEO CONTROLS - Auto-pause other videos & Floating button
+        // ============================================================
+        let activeVideo = null;
+        let activeVideoTitle = '';
+        let videoUpdateInterval = null;
+        let youtubePlayers = {};
+        
+        // YouTube Player States (fallback if YT not loaded)
+        const YTPlayerState = {
+            UNSTARTED: -1,
+            ENDED: 0,
+            PLAYING: 1,
+            PAUSED: 2,
+            BUFFERING: 3,
+            CUED: 5
+        };
+        
+        // Load YouTube iframe API
+        function loadYouTubeAPI() {
+            if (window.YT) {
+                console.log('[Video Controls] YouTube API already loaded');
+                return;
+            }
+            
+            console.log('[Video Controls] Loading YouTube API...');
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // YouTube API ready callback
+        window.onYouTubeIframeAPIReady = function() {
+            console.log('[Video Controls] ✅ YouTube API ready');
+            initYouTubePlayers();
+        };
+        
+        function initYouTubePlayers() {
+            const youtubeIframes = document.querySelectorAll('.lesson-content iframe[src*="youtube.com/embed"]');
+            console.log('[Video Controls] Initializing', youtubeIframes.length, 'YouTube players');
+            
+            youtubeIframes.forEach((iframe, index) => {
+                // Ensure iframe has ID
+                if (!iframe.id) {
+                    iframe.id = 'youtube-player-' + index;
+                }
+                
+                // Get title
+                let title = 'YouTube Video ' + (index + 1);
+                const container = iframe.closest('figure, div, .video-container');
+                if (container) {
+                    const caption = container.querySelector('figcaption, .caption, p');
+                    if (caption && caption.textContent.trim()) {
+                        title = caption.textContent.trim();
+                    }
+                }
+                iframe.dataset.videoTitle = title;
+                iframe.dataset.videoIndex = index;
+                
+                // Enable YouTube API
+                const src = iframe.src;
+                if (!src.includes('enablejsapi=1')) {
+                    iframe.src = src + (src.includes('?') ? '&' : '?') + 'enablejsapi=1';
+                }
+                
+                // Create player
+                try {
+                    const player = new YT.Player(iframe.id, {
+                        events: {
+                            'onStateChange': function(event) {
+                                onYouTubePlayerStateChange(event, iframe, index, title);
+                            }
+                        }
+                    });
+                    youtubePlayers[iframe.id] = player;
+                    console.log('[Video Controls] ✅ YouTube player created:', iframe.id, '-', title);
+                } catch(e) {
+                    console.error('[Video Controls] ❌ Failed to init YouTube player:', e);
+                }
+            });
+        }
+        
+        function onYouTubePlayerStateChange(event, iframe, index, title) {
+            const playerState = window.YT ? YT.PlayerState : YTPlayerState;
+            
+            console.log('[Video Controls] YouTube state change:', event.data, 'for', title);
+            
+            if (event.data === playerState.PLAYING) {
+                console.log('[Video Controls] 🎬 YouTube playing:', title);
+                pauseOtherVideos(iframe);
+                setActiveYouTubeVideo(iframe, title, youtubePlayers[iframe.id]);
+            } else if (event.data === playerState.PAUSED || event.data === playerState.ENDED) {
+                console.log('[Video Controls] ⏸️ YouTube paused/ended:', title);
+                if (activeVideo === iframe) {
+                    hideFloatingButton();
+                    activeVideo = null;
+                }
+            }
+        }
+        
+        function setActiveYouTubeVideo(iframe, title, player) {
+            activeVideo = iframe;
+            activeVideoTitle = title;
+            
+            console.log('[Video Controls] 🎯 Active YouTube video:', title);
+            document.getElementById('floating-video-title').textContent = title;
+            
+            // Start updating time
+            if (videoUpdateInterval) {
+                clearInterval(videoUpdateInterval);
+            }
+            
+            videoUpdateInterval = setInterval(() => {
+                if (activeVideo && player) {
+                    try {
+                        // Check if player methods are available
+                        if (typeof player.getCurrentTime === 'function' && typeof player.getDuration === 'function') {
+                            const current = player.getCurrentTime();
+                            const duration = player.getDuration();
+                            
+                            console.log('[Video Controls] ⏱️ YouTube time:', current, '/', duration);
+                            
+                            if (!isNaN(current) && !isNaN(duration) && current >= 0 && duration > 0) {
+                                const currentFormatted = formatVideoTime(current);
+                                const durationFormatted = formatVideoTime(duration);
+                                const timeText = currentFormatted + ' / ' + durationFormatted;
+                                document.getElementById('floating-video-time').textContent = timeText;
+                                console.log('[Video Controls] ⏱️ Time updated:', timeText);
+                            } else {
+                                console.log('[Video Controls] ⚠️ Invalid time values:', current, duration);
+                            }
+                        } else {
+                            console.log('[Video Controls] ⚠️ Player methods not available');
+                        }
+                    } catch(e) {
+                        console.error('[Video Controls] ❌ Error updating time:', e);
+                    }
+                }
+            }, 1000);
+            
+            // Check visibility immediately and start checking
+            setTimeout(() => {
+                checkVideoVisibility();
+                // Force first time update
+                if (player && typeof player.getCurrentTime === 'function') {
+                    try {
+                        const current = player.getCurrentTime();
+                        const duration = player.getDuration();
+                        if (!isNaN(current) && !isNaN(duration)) {
+                            const timeText = formatVideoTime(current) + ' / ' + formatVideoTime(duration);
+                            document.getElementById('floating-video-time').textContent = timeText;
+                        }
+                    } catch(e) {
+                        console.error('[Video Controls] Error in initial time update:', e);
+                    }
+                }
+            }, 500);
+        }
+        
+        function initVideoControls() {
+            const videos = document.querySelectorAll('.lesson-content video, .lesson-content iframe[src*="youtube"], .lesson-content iframe[src*="vimeo"]');
+            console.log('[Video Controls] Found', videos.length, 'videos');
+            
+            // Check if YouTube videos exist
+            const hasYouTube = document.querySelector('.lesson-content iframe[src*="youtube.com/embed"]');
+            if (hasYouTube) {
+                loadYouTubeAPI();
+            }
+            
+            videos.forEach((video, index) => {
+                // Add data attribute for tracking
+                video.dataset.videoIndex = index;
+                
+                // Get video title from nearby elements
+                let title = 'Video ' + (index + 1);
+                const parent = video.closest('figure, div, p');
+                if (parent) {
+                    const caption = parent.querySelector('figcaption, .caption, p');
+                    if (caption && caption.textContent.trim()) {
+                        title = caption.textContent.trim();
+                    }
+                }
+                video.dataset.videoTitle = title;
+                
+                if (video.tagName === 'VIDEO') {
+                    // Native HTML5 video
+                    video.addEventListener('play', function() {
+                        console.log('[Video Controls] 🎬 HTML5 video playing:', title);
+                        pauseOtherVideos(this);
+                        setActiveVideo(this, title);
+                    });
+                    
+                    video.addEventListener('pause', function() {
+                        console.log('[Video Controls] ⏸️ HTML5 video paused:', title);
+                        if (activeVideo === this) {
+                            hideFloatingButton();
+                            activeVideo = null;
+                        }
+                    });
+                    
+                    video.addEventListener('ended', function() {
+                        console.log('[Video Controls] ⏹️ HTML5 video ended:', title);
+                        if (activeVideo === this) {
+                            hideFloatingButton();
+                            activeVideo = null;
+                        }
+                    });
+                }
+            });
+            
+            console.log('[Video Controls] ✅ Video controls initialized');
+        }
+        
+        function setActiveVideo(video, title) {
+            activeVideo = video;
+            activeVideoTitle = title;
+            
+            console.log('[Video Controls] 🎯 Active HTML5 video:', title);
+            document.getElementById('floating-video-title').textContent = title;
+            
+            // Start updating time
+            if (videoUpdateInterval) {
+                clearInterval(videoUpdateInterval);
+            }
+            
+            videoUpdateInterval = setInterval(() => {
+                if (activeVideo && activeVideo.tagName === 'VIDEO' && !activeVideo.paused) {
+                    const current = formatVideoTime(activeVideo.currentTime);
+                    const duration = formatVideoTime(activeVideo.duration);
+                    document.getElementById('floating-video-time').textContent = current + ' / ' + duration;
+                }
+            }, 1000);
+            
+            // Check visibility immediately
+            setTimeout(() => checkVideoVisibility(), 100);
+        }
+        
+        function pauseOtherVideos(currentVideo) {
+            console.log('[Video Controls] 🔇 Pausing other videos, current:', currentVideo.id || currentVideo.dataset?.videoIndex);
+            
+            // Pause HTML5 videos
+            const videos = document.querySelectorAll('.lesson-content video');
+            videos.forEach(video => {
+                if (video !== currentVideo && !video.paused) {
+                    video.pause();
+                    console.log('[Video Controls] ⏸️ Paused HTML5 video', video.dataset.videoIndex);
+                }
+            });
+            
+            // Pause YouTube videos
+            const playerState = window.YT ? YT.PlayerState : YTPlayerState;
+            Object.keys(youtubePlayers).forEach(playerId => {
+                const player = youtubePlayers[playerId];
+                const iframe = document.getElementById(playerId);
+                if (iframe !== currentVideo) {
+                    try {
+                        if (player.getPlayerState && player.getPlayerState() === playerState.PLAYING) {
+                            player.pauseVideo();
+                            console.log('[Video Controls] ⏸️ Paused YouTube video', playerId);
+                        }
+                    } catch(e) {
+                        console.error('[Video Controls] Error pausing YouTube:', e);
+                    }
+                }
+            });
+        }
+        
+        function setActiveVideo(video, title) {
+            activeVideo = video;
+            activeVideoTitle = title;
+            
+            console.log('[Video Controls] Active video:', title);
+            
+            // Update floating button info
+            document.getElementById('floating-video-title').textContent = title;
+            
+            // Start updating time
+            if (videoUpdateInterval) {
+                clearInterval(videoUpdateInterval);
+            }
+            
+            videoUpdateInterval = setInterval(() => {
+                if (activeVideo && !activeVideo.paused) {
+                    const current = formatVideoTime(activeVideo.currentTime);
+                    const duration = formatVideoTime(activeVideo.duration);
+                    document.getElementById('floating-video-time').textContent = current + ' / ' + duration;
+                }
+            }, 1000);
+            
+            // Check visibility immediately
+            checkVideoVisibility();
+        }
+        
+        function formatVideoTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        function checkVideoVisibility() {
+            if (!activeVideo) {
+                hideFloatingButton();
+                return;
+            }
+            
+            // Check if video is in viewport
+            const rect = activeVideo.getBoundingClientRect();
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+            const isVisible = (
+                rect.top >= 0 &&
+                rect.top < windowHeight &&
+                rect.bottom > 0 &&
+                rect.bottom <= windowHeight
+            );
+            
+            console.log('[Video Controls] 👁️ Video visible:', isVisible, 'top:', rect.top, 'bottom:', rect.bottom, 'windowHeight:', windowHeight);
+            
+            // Check if video is playing
+            let isPlaying = false;
+            const playerState = window.YT ? YT.PlayerState : YTPlayerState;
+            
+            if (activeVideo.tagName === 'VIDEO') {
+                isPlaying = !activeVideo.paused;
+            } else if (activeVideo.tagName === 'IFRAME' && youtubePlayers[activeVideo.id]) {
+                try {
+                    const player = youtubePlayers[activeVideo.id];
+                    if (player.getPlayerState) {
+                        const state = player.getPlayerState();
+                        isPlaying = state === playerState.PLAYING;
+                    }
+                } catch(e) {
+                    console.error('[Video Controls] Error checking player state:', e);
+                    isPlaying = false;
+                }
+            }
+            
+            console.log('[Video Controls] 🎬 Is playing:', isPlaying);
+            
+            // Show floating button if video is playing but not fully visible
+            if (isPlaying && !isVisible) {
+                console.log('[Video Controls] 📺 Showing floating button');
+                showFloatingButton();
+            } else {
+                console.log('[Video Controls] 🚫 Hiding floating button');
+                hideFloatingButton();
+            }
+        }
+        
+        function showFloatingButton() {
+            const btn = document.getElementById('floating-video-btn');
+            if (btn && btn.classList.contains('hidden')) {
+                btn.classList.remove('hidden');
+                console.log('[Video Controls] ✅ Floating button shown');
+            }
+        }
+        
+        function hideFloatingButton() {
+            const btn = document.getElementById('floating-video-btn');
+            if (btn && !btn.classList.contains('hidden')) {
+                btn.classList.add('hidden');
+                console.log('[Video Controls] ❌ Floating button hidden');
+            }
+            
+            if (videoUpdateInterval) {
+                clearInterval(videoUpdateInterval);
+                videoUpdateInterval = null;
+            }
+        }
+        
+        function scrollToActiveVideo() {
+            if (!activeVideo) {
+                console.log('[Video Controls] ⚠️ No active video to scroll to');
+                return;
+            }
+            
+            console.log('[Video Controls] 📍 Scrolling to active video');
+            activeVideo.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            
+            // Hide button after scrolling
+            setTimeout(() => {
+                checkVideoVisibility();
+            }, 800);
+        }
+        
+        // ============================================================
+        // STUDY TIME TRACKING
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Video Controls] 🚀 Initializing video controls...');
+            
+            // Initialize video controls
+            initVideoControls();
+            
+            // Add scroll listener with throttle
+            let scrollTimeout;
+            window.addEventListener('scroll', function() {
+                if (scrollTimeout) {
+                    clearTimeout(scrollTimeout);
+                }
+                scrollTimeout = setTimeout(() => {
+                    checkVideoVisibility();
+                }, 100);
+            }, { passive: true });
+            
+            // Check visibility periodically for playing videos
+            setInterval(() => {
+                if (activeVideo) {
+                    checkVideoVisibility();
+                }
+            }, 2000);
             // Initialize tracker for this COURSE (shared across all lessons)
             // Using course_id as resourceId so all lessons share same localStorage key
             const courseId = {{ $lesson['course_id'] }};
