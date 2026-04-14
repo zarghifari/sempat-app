@@ -33,6 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_active',
         'last_login_at',
         'last_login_ip',
+        'fcm_token',
     ];
 
     /**
