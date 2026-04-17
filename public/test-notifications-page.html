@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="test-token">
+    <title>Test Notifications Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-2xl font-bold mb-4">🔍 Testing Notifications Page Access</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-4">
+            <h2 class="font-semibold mb-2">Step 1: Check if page loads</h2>
+            <a href="/notifications" class="text-blue-600 hover:underline" target="_blank">
+                → Open /notifications page
+            </a>
+            <p class="text-sm text-gray-600 mt-2">If you see a blank page, check browser console (F12)</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-4">
+            <h2 class="font-semibold mb-2">Step 2: Test Data Fetch</h2>
+            <button 
+                onclick="testDataFetch()"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+                Test Fetch Notifications Data
+            </button>
+            <pre id="dataResult" class="mt-4 p-4 bg-gray-100 rounded text-xs overflow-x-auto hidden"></pre>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="font-semibold mb-2">Step 3: Check Console Logs</h2>
+            <p class="text-sm text-gray-600">Open browser console (F12) to see any errors</p>
+            <div id="consoleLog" class="mt-4 p-4 bg-gray-900 text-green-400 rounded text-xs font-mono"></div>
+        </div>
+    </div>
+
+    <script>
+        // Intercept console.error to display
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const logDiv = document.getElementById('consoleLog');
+            logDiv.innerHTML += '<div class="text-red-400">ERROR: ' + args.join(' ') + '</div>';
+        };
+
+        async function testDataFetch() {
+            const result = document.getElementById('dataResult');
+            result.classList.remove('hidden');
+            result.textContent = 'Loading...';
+            
+            try {
+                // Simulate what the controller does
+                const response = await fetch('/api/notifications?filter=all&per_page=5');
+                const data = await response.json();
+                
+                result.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('✅ Data fetched successfully:', data);
+            } catch (error) {
+                result.textContent = 'ERROR: ' + error.message;
+                console.error('❌ Fetch failed:', error);
+            }
+        }
+
+        // Log page load
+        console.log('✅ Test page loaded');
+        console.log('Alpine version:', window.Alpine ? 'Loaded' : 'NOT loaded');
+        
+        // Wait for Alpine
+        document.addEventListener('alpine:init', () => {
+            console.log('✅ Alpine initialized');
+        });
+
+        window.addEventListener('alpine:initialized', () => {
+            console.log('✅ Alpine fully ready');
+        });
+    </script>
+</body>
+</html>

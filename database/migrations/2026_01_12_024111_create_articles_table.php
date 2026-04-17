@@ -54,7 +54,7 @@ return new class extends Migration
             $table->index('status');
             $table->index('is_featured');
             $table->index('published_at');
-            $table->fullText(['title', 'excerpt', 'content']);
+            // Fulltext index removed for MySQL compatibility
         });
     }
 

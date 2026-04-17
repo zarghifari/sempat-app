@@ -23,13 +23,7 @@ class JournalReminderNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -46,20 +40,4 @@ class JournalReminderNotification extends Notification implements ShouldQueue
         ];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        return [
-            'title' => 'Saatnya Refleksi Harian 📝',
-            'body' => 'Tulis jurnal belajar hari ini. Apa yang sudah kamu pelajari? Apa yang masih perlu ditingkatkan?',
-            'icon' => '/images/notification-icon.png',
-            'click_action' => route('learning-journals.index'),
-            'data' => [
-                'type' => 'journal_reminder',
-                'url' => route('learning-journals.index'),
-            ],
-        ];
-    }
-}
+    

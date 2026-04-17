@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="text-5xl">🧪</div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Notification System Tester</h1>
+                    <p class="text-gray-600">Buat notifikasi test untuk melihat fitur notifikasi beraksi!</p>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <p class="text-sm text-blue-900">
+                    <strong>📌 Cara Pakai:</strong> Klik tombol di bawah untuk membuat notifikasi test. 
+                    Setelah itu, lihat icon bell 🔔 di header aplikasi untuk melihat notifikasi baru!
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <a href="http://127.0.0.1:8000/login" target="_blank" 
+               class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    <div>
+                        <div class="font-bold text-lg">Login ke Aplikasi</div>
+                        <div class="text-blue-100 text-sm">Buka aplikasi di tab baru</div>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    <div>
+                        <div class="font-bold text-lg">Status Server</div>
+                        <div class="text-green-100 text-sm">✓ Running on port 8000</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Types -->
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Jenis Notifikasi</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <!-- Daily Goal -->
+                <button onclick="createNotification('goal')" 
+                        class="group bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 border-2 border-yellow-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">✨</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Daily Study Goal</h3>
+                    <p class="text-gray-600 text-sm">Target belajar harian tercapai</p>
+                    <div class="mt-3 text-xs text-yellow-700 bg-yellow-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+
+                <!-- Study Streak -->
+                <button onclick="createNotification('streak')" 
+                        class="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 border-2 border-orange-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">🔥</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Study Streak</h3>
+                    <p class="text-gray-600 text-sm">Pencapaian streak belajar</p>
+                    <div class="mt-3 text-xs text-orange-700 bg-orange-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+
+                <!-- Lesson Completed -->
+                <button onclick="createNotification('lesson')" 
+                        class="group bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-2 border-green-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">📚</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Lesson Completed</h3>
+                    <p class="text-gray-600 text-sm">Pelajaran berhasil diselesaikan</p>
+                    <div class="mt-3 text-xs text-green-700 bg-green-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+
+                <!-- Course Completed -->
+                <button onclick="createNotification('course')" 
+                        class="group bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-2 border-purple-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">🎉</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Course Completed</h3>
+                    <p class="text-gray-600 text-sm">Kursus berhasil diselesaikan</p>
+                    <div class="mt-3 text-xs text-purple-700 bg-purple-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+
+                <!-- Study Reminder -->
+                <button onclick="createNotification('reminder')" 
+                        class="group bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-2 border-blue-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">⏰</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Study Reminder</h3>
+                    <p class="text-gray-600 text-sm">Pengingat untuk belajar</p>
+                    <div class="mt-3 text-xs text-blue-700 bg-blue-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+
+                <!-- Journal Reminder -->
+                <button onclick="createNotification('journal')" 
+                        class="group bg-gradient-to-br from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 border-2 border-pink-300 rounded-xl p-6 text-left transition-all transform hover:scale-105 hover:shadow-lg">
+                    <div class="text-4xl mb-3">📖</div>
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Journal Reminder</h3>
+                    <p class="text-gray-600 text-sm">Pengingat untuk menulis jurnal</p>
+                    <div class="mt-3 text-xs text-pink-700 bg-pink-200 px-3 py-1 rounded-full inline-block">
+                        Klik untuk test
+                    </div>
+                </button>
+            </div>
+
+            <!-- Create All Button -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <button onclick="createNotification('all')" 
+                        class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                    <span class="text-lg">🎯 Buat Semua Notifikasi Sekaligus</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mt-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">📋 Cara Testing</h2>
+            <ol class="space-y-3 text-gray-700">
+                <li class="flex gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                    <span>Login ke aplikasi dengan membuka <strong>http://127.0.0.1:8000</strong></span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                    <span>Klik salah satu tombol di atas untuk membuat notifikasi test</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                    <span>Lihat icon bell 🔔 di header aplikasi - akan muncul badge merah dengan jumlah notifikasi</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
+                    <span>Klik bell icon untuk melihat dropdown notifikasi</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">5</span>
+                    <span>Klik "Lihat Semua Notifikasi" untuk melihat halaman lengkap</span>
+                </li>
+            </ol>
+        </div>
+
+        <!-- Status Display -->
+        <div id="status" class="mt-6 hidden">
+            <div class="bg-green-100 border border-green-400 text-green-800 px-6 py-4 rounded-xl shadow-lg">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="statusMessage" class="font-semibold"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createNotification(type) {
+            // Show loading
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="flex items-center justify-center gap-2"><svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Membuat...</div>';
+            
+            // Create notification via route
+            fetch(`http://127.0.0.1:8000/test-notification/${type}`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // User not logged in, redirect to login
+                    window.open(response.url, '_blank');
+                    showStatus('⚠️ Silakan login terlebih dahulu!', 'warning');
+                } else {
+                    showStatus('✅ Notifikasi berhasil dibuat! Cek bell icon di aplikasi.', 'success');
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            });
+        }
+        
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            statusDiv.classList.remove('hidden');
+            statusMessage.textContent = message;
+            
+            // Change color based on type
+            if (type === 'success') {
+                statusDiv.querySelector('div').className = 'bg-green-100 border border-green-400 text-green-800 px-6 py-4 rounded-xl shadow-lg';
+            } else if (type === 'warning') {
+                statusDiv.querySelector('div').className = 'bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-4 rounded-xl shadow-lg';
+            } else if (type === 'error') {
+                statusDiv.querySelector('div').className = 'bg-red-100 border border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg';
+            }
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

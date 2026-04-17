@@ -26,13 +26,7 @@ class CourseCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -42,30 +36,15 @@ class CourseCompletedNotification extends Notification implements ShouldQueue
     {
         return [
             'type' => 'course_completed',
-            'title' => 'Course Selesai! 🎉🎓',
-            'message' => "Luar biasa! Kamu telah menyelesaikan course \"{$this->course->title}\"",
+            'title' => 'Course Selesai! �',
+            'message' => "Luar biasa! Kamu telah menyelesaikan course \"{$this->course->title}\"!",
             'icon' => '🎓',
             'url' => route('courses.show', $this->course->id),
             'course_id' => $this->course->id,
             'course_title' => $this->course->title,
-        ];
-    }
-
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        return [
-            'title' => 'Course Selesai! 🎉🎓',
-            'body' => "Luar biasa! Kamu telah menyelesaikan course \"{$this->course->title}\"",
-            'icon' => '/images/notification-icon.png',
-            'click_action' => route('courses.show', $this->course->id),
-            'data' => [
-                'type' => 'course_completed',
-                'course_id' => $this->course->id,
-                'url' => route('courses.show', $this->course->id),
-            ],
+            'priority' => 200, // Course has highest priority (appears after modules)
+            'sort_timestamp' => now()->addSeconds(6)->timestamp, // Delayed sorting
         ];
     }
 }
+

@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Models\Module;
+use App\Models\Course;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -10,16 +12,16 @@ class ModuleCompletedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    protected $moduleName;
-    protected $courseProgress;
+    protected $module;
+    protected $course;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(string $moduleName, ?int $courseProgress = null)
+    public function __construct(Module $module, Course $course)
     {
-        $this->moduleName = $moduleName;
-        $this->courseProgress = $courseProgress;
+        $this->module = $module;
+        $this->course = $course;
     }
 
     /**
@@ -27,13 +29,7 @@ class ModuleCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -41,40 +37,19 @@ class ModuleCompletedNotification extends Notification implements ShouldQueue
      */
     public function toDatabase(object $notifiable): array
     {
-        $progressText = $this->courseProgress 
-            ? " Progress course: {$this->courseProgress}%" 
-            : '';
-        
         return [
             'type' => 'module_completed',
             'title' => 'Module Selesai! 📖',
-            'message' => "Hebat! Kamu telah menyelesaikan module \"{$this->moduleName}\".{$progressText}",
+            'message' => "Hebat! Kamu telah menyelesaikan module \"{$this->module->title}\" dalam course \"{$this->course->title}\".",
             'icon' => '📖',
-            'url' => route('dashboard'),
-            'module_name' => $this->moduleName,
-            'course_progress' => $this->courseProgress,
-        ];
-    }
-
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        $progressText = $this->courseProgress 
-            ? " Progress course: {$this->courseProgress}%" 
-            : '';
-        
-        return [
-            'title' => 'Module Selesai! 📖',
-            'body' => "Hebat! Kamu telah menyelesaikan module \"{$this->moduleName}\".{$progressText}",
-            'icon' => '/images/notification-icon.png',
-            'click_action' => route('dashboard'),
-            'data' => [
-                'type' => 'module_completed',
-                'module_name' => $this->moduleName,
-                'url' => route('dashboard'),
-            ],
+            'url' => route('courses.show', $this->course->id),
+            'module_id' => $this->module->id,
+            'module_title' => $this->module->title,
+            'course_id' => $this->course->id,
+            'course_title' => $this->course->title,
+            'priority' => 100, // Module has higher priority (appears after lessons)
+            'sort_timestamp' => now()->addSeconds(3)->timestamp, // Delayed sorting
         ];
     }
 }
+

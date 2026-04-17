@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .result {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔔 Notification API Test</h1>
+    <p>This page tests if your notification APIs are working correctly.</p>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testUnreadCount()">Test Unread Count</button>
+        <button onclick="testRecent()">Test Recent Notifications</button>
+        <button onclick="testAll()">Test All APIs</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(title, data, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = `
+                <h3 class="${isError ? 'error' : 'success'}">${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        async function testUnreadCount() {
+            document.getElementById('results').innerHTML = '';
+            try {
+                const response = await fetch('/api/notifications/unread-count', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    addResult('❌ Unread Count (HTTP Error)', {
+                        status: response.status,
+                        statusText: response.statusText
+                    }, true);
+                    return;
+                }
+                
+                const data = await response.json();
+                addResult('✅ Unread Count', data);
+            } catch (error) {
+                addResult('❌ Unread Count (Network Error)', {
+                    message: error.message
+                }, true);
+            }
+        }
+
+        async function testRecent() {
+            document.getElementById('results').innerHTML = '';
+            try {
+                const response = await fetch('/api/notifications/recent?limit=5', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    addResult('❌ Recent Notifications (HTTP Error)', {
+                        status: response.status,
+                        statusText: response.statusText
+                    }, true);
+                    return;
+                }
+                
+                const data = await response.json();
+                addResult('✅ Recent Notifications', {
+                    success: data.success,
+                    count: data.data.length,
+                    unread_count: data.unread_count,
+                    notifications: data.data
+                });
+            } catch (error) {
+                addResult('❌ Recent Notifications (Network Error)', {
+                    message: error.message
+                }, true);
+            }
+        }
+
+        async function testAll() {
+            document.getElementById('results').innerHTML = '';
+            await testUnreadCount();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testRecent();
+        }
+
+        // Auto-run on page load
+        window.onload = () => {
+            addResult('ℹ️ Page Loaded', {
+                message: 'Click buttons above to test the notification APIs',
+                note: 'You must be logged in for these tests to work'
+            });
+        };
+    </script>
+</body>
+</html>

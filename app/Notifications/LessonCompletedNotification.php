@@ -28,14 +28,7 @@ class LessonCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        // Add FCM channel if user has FCM token
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -48,38 +41,16 @@ class LessonCompletedNotification extends Notification implements ShouldQueue
             'title' => 'Lesson Selesai! 🎉',
             'message' => "Selamat! Kamu telah menyelesaikan lesson \"{$this->lesson->title}\"",
             'icon' => '✅',
-            'url' => route('courses.lessons.show', [
-                'course' => $this->lesson->module->course_id,
-                'lesson' => $this->lesson->id
-            ]),
+            'url' => route('lessons.show', $this->lesson->id),
             'lesson_id' => $this->lesson->id,
             'lesson_title' => $this->lesson->title,
             'module_title' => $this->lesson->module->title,
             'progress' => $this->progress,
+            'priority' => 0, // Lesson has lowest priority (appears first chronologically)
+            'sort_timestamp' => now()->timestamp, // For proper ordering
         ];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        return [
-            'title' => 'Lesson Selesai! 🎉',
-            'body' => "Selamat! Kamu telah menyelesaikan lesson \"{$this->lesson->title}\"",
-            'icon' => '/images/notification-icon.png',
-            'click_action' => route('courses.lessons.show', [
-                'course' => $this->lesson->module->course_id,
-                'lesson' => $this->lesson->id
-            ]),
-            'data' => [
-                'type' => 'lesson_completed',
-                'lesson_id' => $this->lesson->id,
-                'url' => route('courses.lessons.show', [
-                    'course' => $this->lesson->module->course_id,
-                    'lesson' => $this->lesson->id
-                ]),
-            ],
-        ];
-    }
+
 }
+

@@ -25,13 +25,7 @@ class StudyStreakMilestoneNotification extends Notification implements ShouldQue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -51,16 +45,7 @@ class StudyStreakMilestoneNotification extends Notification implements ShouldQue
         ];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        $milestoneEmoji = $this->getMilestoneEmoji($this->streakDays);
-        
-        return [
-            'title' => "Streak {$this->streakDays} Hari! $milestoneEmoji",
-            'body' => "Luar biasa! Kamu sudah konsisten belajar {$this->streakDays} hari berturut-turut. Keep it up!",
+    hari berturut-turut. Keep it up!",
             'icon' => '/images/notification-icon.png',
             'click_action' => route('dashboard'),
             'data' => [
@@ -85,3 +70,4 @@ class StudyStreakMilestoneNotification extends Notification implements ShouldQue
         };
     }
 }
+

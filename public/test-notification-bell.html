@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification Bell API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Test Notification Bell API</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">API Endpoints Test</h2>
+            <button onclick="testUnreadCount()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-2">Test Unread Count</button>
+            <button onclick="testRecent()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mr-2">Test Recent Notifications</button>
+            <button onclick="testMarkAllRead()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Mark All Read</button>
+        </div>
+        
+        <div id="results" class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Results:</h3>
+            <pre id="output" class="bg-gray-50 p-4 rounded text-sm overflow-auto max-h-96"></pre>
+        </div>
+    </div>
+    
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            output.textContent += message + '\n\n';
+        }
+        
+        async function testUnreadCount() {
+            document.getElementById('output').textContent = '';
+            log('Testing /api/notifications/unread-count...');
+            
+            try {
+                const response = await fetch('/api/notifications/unread-count');
+                const data = await response.json();
+                log('Response:');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+        
+        async function testRecent() {
+            document.getElementById('output').textContent = '';
+            log('Testing /api/notifications/recent...');
+            
+            try {
+                const response = await fetch('/api/notifications/recent?limit=5');
+                const data = await response.json();
+                log('Response:');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+        
+        async function testMarkAllRead() {
+            document.getElementById('output').textContent = '';
+            log('Testing /api/notifications/read-all...');
+            
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    log('Warning: No CSRF token found. This may not work without authentication.');
+                }
+                
+                const response = await fetch('/api/notifications/read-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ? csrfToken.content : ''
+                    }
+                });
+                
+                const data = await response.json();
+                log('Response:');
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

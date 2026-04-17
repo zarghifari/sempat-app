@@ -61,7 +61,8 @@ return new class extends Migration
             $table->index('created_by');
             $table->index('is_featured');
             $table->index('published_at');
-            $table->fullText(['title', 'description']);
+            // Fulltext index removed for MySQL compatibility
+            // Can be added manually: ALTER TABLE courses ADD FULLTEXT(title, description);
         });
     }
 

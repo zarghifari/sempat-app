@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Alpine.js Component</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Alpine.js Component Test</h1>
+    <p>Testing if the notification bell component structure is valid</p>
+    
+    <div id="results"></div>
+
+    <div x-data="notificationBell" class="result">
+        <h3>✅ Component Data:</h3>
+        <ul>
+            <li>Open: <span x-text="open"></span></li>
+            <li>Loading: <span x-text="loading"></span></li>
+            <li>Unread Count: <span x-text="unreadCount"></span></li>
+            <li>Notifications: <span x-text="notifications.length"></span></li>
+        </ul>
+        
+        <button @click="open = !open" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Toggle Dropdown
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('notificationBell', () => ({
+                open: false,
+                loading: false,
+                notifications: [],
+                unreadCount: 0,
+                refreshInterval: null,
+
+                init() {
+                    console.log('🔔 Notification bell initializing...');
+                    // Simulate data
+                    this.unreadCount = 5;
+                    this.notifications = [
+                        { id: 1, data: { title: 'Test 1' } },
+                        { id: 2, data: { title: 'Test 2' } }
+                    ];
+                    console.log('✅ Notification bell initialized!');
+                    
+                    document.getElementById('results').innerHTML = `
+                        <div class="result">
+                            <h3 class="success">✅ Alpine.js Component Working!</h3>
+                            <p>If you can see this message and toggle the button, Alpine.js is working correctly.</p>
+                        </div>
+                    `;
+                },
+
+                destroy() {
+                    if (this.refreshInterval) {
+                        clearInterval(this.refreshInterval);
+                    }
+                },
+
+                toggleDropdown() {
+                    this.open = !this.open;
+                },
+
+                formatTime(timestamp) {
+                    return 'Just now';
+                }
+            }));
+        });
+
+        // Additional test to check if Alpine loaded
+        window.addEventListener('alpine:initialized', () => {
+            console.log('✅ Alpine.js fully initialized!');
+        });
+    </script>
+</body>
+</html>

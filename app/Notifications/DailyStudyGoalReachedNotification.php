@@ -27,13 +27,7 @@ class DailyStudyGoalReachedNotification extends Notification implements ShouldQu
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -52,14 +46,7 @@ class DailyStudyGoalReachedNotification extends Notification implements ShouldQu
         ];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        return [
-            'title' => 'Target Belajar Tercapai! ✨',
-            'body' => "Keren! Kamu sudah belajar {$this->studyMinutes} menit hari ini. Target {$this->goalMinutes} menit tercapai! 🎯",
+    menit tercapai! 🎯",
             'icon' => '/images/notification-icon.png',
             'click_action' => route('dashboard'),
             'data' => [
@@ -70,3 +57,4 @@ class DailyStudyGoalReachedNotification extends Notification implements ShouldQu
         ];
     }
 }
+

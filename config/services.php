@@ -36,7 +36,12 @@ return [
     ],
 
     'fcm' => [
+        // Legacy API (deprecated, tidak digunakan)
         'server_key' => env('FCM_SERVER_KEY'),
+        
+        // V1 API (recommended)
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'service_account_path' => env('FIREBASE_SERVICE_ACCOUNT_PATH'),
     ],
 
 ];

@@ -20,6 +20,64 @@ use App\Http\Controllers\DeployController;
 Route::get('/deploy/run', [DeployController::class, 'run'])
     ->middleware(['throttle:3,1']); // batasi request
 
+// Test notification route (only for development)
+Route::get('/test-notification/{type?}', function ($type = 'all') {
+    if (!Auth::check()) {
+        return redirect()->route('login')->with('error', 'Please login first');
+    }
+    
+    $user = Auth::user();
+    
+    switch ($type) {
+        case 'goal':
+            $user->notify(new \App\Notifications\DailyStudyGoalReachedNotification(75, 60));
+            $message = '✅ Daily Study Goal notification created!';
+            break;
+            
+        case 'streak':
+            $user->notify(new \App\Notifications\StudyStreakMilestoneNotification(7));
+            $message = '✅ Study Streak notification created!';
+            break;
+            
+        case 'lesson':
+            $lesson = (object)['title' => 'Test Lesson: Laravel Notifications', 'id' => 999];
+            $course = (object)['title' => 'Laravel Mastery', 'id' => 1];
+            $user->notify(new \App\Notifications\LessonCompletedNotification($lesson, $course));
+            $message = '✅ Lesson Completed notification created!';
+            break;
+            
+        case 'course':
+            $course = (object)['title' => 'Full Stack Development', 'id' => 1];
+            $user->notify(new \App\Notifications\CourseCompletedNotification($course));
+            $message = '✅ Course Completed notification created!';
+            break;
+            
+        case 'reminder':
+            $user->notify(new \App\Notifications\StudyReminderNotification());
+            $message = '✅ Study Reminder notification created!';
+            break;
+            
+        case 'journal':
+            $user->notify(new \App\Notifications\JournalReminderNotification());
+            $message = '✅ Journal Reminder notification created!';
+            break;
+            
+        default: // 'all'
+            $user->notify(new \App\Notifications\DailyStudyGoalReachedNotification(90, 60));
+            $user->notify(new \App\Notifications\StudyStreakMilestoneNotification(14));
+            $lesson = (object)['title' => 'Advanced API Development', 'id' => 1];
+            $course = (object)['title' => 'Backend Mastery', 'id' => 1];
+            $user->notify(new \App\Notifications\LessonCompletedNotification($lesson, $course));
+            $message = '✅ Multiple test notifications created!';
+            break;
+    }
+    
+    // Process queue immediately
+    \Artisan::call('queue:work', ['--stop-when-empty' => true]);
+    
+    return redirect()->back()->with('success', $message . ' Check your notification bell!');
+})->middleware('auth')->name('test.notification');
+
 Route::get('/', function () {
     // If user is already authenticated, redirect to dashboard
     if (Auth::check()) {
@@ -168,6 +226,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Notifications Routes
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     
     // Courses Routes
     Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
@@ -356,6 +417,16 @@ Route::middleware('auth')->prefix('api')->group(function () {
     // User study statistics
     Route::get('/user/study-stats', [$controller, 'getUserStats']);
     Route::get('/user/today-stats', [$controller, 'getTodayStats']);
+    
+    // Notification API Routes
+    $notificationController = \App\Http\Controllers\Api\NotificationController::class;
+    
+    Route::get('/notifications', [$notificationController, 'index']);
+    Route::get('/notifications/unread-count', [$notificationController, 'unreadCount']);
+    Route::get('/notifications/recent', [$notificationController, 'recent']);
+    Route::post('/notifications/{id}/read', [$notificationController, 'markAsRead']);
+    Route::post('/notifications/read-all', [$notificationController, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [$notificationController, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

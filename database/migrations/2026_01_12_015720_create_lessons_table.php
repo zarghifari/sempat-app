@@ -58,7 +58,7 @@ return new class extends Migration
             $table->index(['module_id', 'order']);
             $table->index('type');
             $table->index('status');
-            $table->fullText(['title', 'content']);
+            // Fulltext index removed for MySQL compatibility
         });
     }
 

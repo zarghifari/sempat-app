@@ -32,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Event::listen(
+            \App\Events\ModuleCompletedEvent::class,
+            \App\Listeners\SendModuleCompletedNotification::class,
+        );
+
+        Event::listen(
             \App\Events\DailyStudyGoalReachedEvent::class,
             \App\Listeners\SendDailyStudyGoalNotification::class,
         );

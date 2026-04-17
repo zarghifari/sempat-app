@@ -98,18 +98,6 @@
         </div>
     </details>
 
-    <!-- Role Information -->
-    <div class="bg-white rounded-xl p-5 mb-4 shadow-sm mx-4">
-        <h2 class="font-bold text-gray-900 mb-3">Roles & Permissions</h2>
-        <div class="flex flex-wrap gap-2">
-            @foreach($user->roles as $role)
-                <span class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                    {{ ucfirst($role->name) }}
-                </span>
-            @endforeach
-        </div>
-    </div>
-
     <!-- Settings Menu -->
     <div class="space-y-2 mb-20 px-4">
         <a href="#" class="block bg-white rounded-xl p-4 shadow-sm active:scale-95 transition-transform">

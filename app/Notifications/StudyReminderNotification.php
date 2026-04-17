@@ -23,13 +23,7 @@ class StudyReminderNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        if ($notifiable->fcm_token) {
-            $channels[] = 'fcm';
-        }
-        
-        return $channels;
+        return ['database'];
     }
 
     /**
@@ -46,20 +40,4 @@ class StudyReminderNotification extends Notification implements ShouldQueue
         ];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm(object $notifiable): array
-    {
-        return [
-            'title' => 'Waktunya Belajar! 📚',
-            'body' => 'Belum belajar hari ini? Yuk lanjutin pembelajaran kamu! Konsistensi adalah kunci.',
-            'icon' => '/images/notification-icon.png',
-            'click_action' => route('courses.index'),
-            'data' => [
-                'type' => 'study_reminder',
-                'url' => route('courses.index'),
-            ],
-        ];
-    }
-}
+    

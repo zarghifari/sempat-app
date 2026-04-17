@@ -5,7 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Lesson;
 use App\Models\LessonCompletion;
 use App\Models\Enrollment;
+use App\Models\Module;
 use App\Services\TimeTrackingService;
+use App\Events\LessonCompletedEvent;
+use App\Events\ModuleCompletedEvent;
+use App\Events\CourseCompletedEvent;
+use App\Jobs\DispatchModuleCompletedEvent;
+use App\Jobs\DispatchCourseCompletedEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -143,10 +149,12 @@ class LessonController extends Controller
         );
         
         // Mark as complete
+        $wasAlreadyCompleted = $completion->status === 'completed';
+        
         $completion->update([
             'status' => 'completed',
             'progress_percentage' => 100,
-            'completed_at' => now(),
+            'completed_at' => $completion->completed_at ?? now(),
         ]);
         
         // Force sync all pending time to enrollment
@@ -154,6 +162,14 @@ class LessonController extends Controller
         
         // Update enrollment progress
         $this->updateEnrollmentProgress($enrollment);
+        
+        // ✨ Trigger Lesson Completed Notification (only if newly completed)
+        if (!$wasAlreadyCompleted) {
+            event(new LessonCompletedEvent($user, $lesson));
+            
+            // Check if module is now completed
+            $this->checkModuleCompletion($lesson->module, $user, $enrollment);
+        }
         
         return redirect()->back()->with('success', 'Pelajaran berhasil diselesaikan!');
     }
@@ -183,11 +199,43 @@ class LessonController extends Controller
         ]);
         
         // Check if course is completed
-        if ($progressPercentage >= 100) {
+        if ($progressPercentage >= 100 && $enrollment->status !== 'completed') {
             $enrollment->update([
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
+            
+            // ✨ Trigger Course Completed Notification with 6 second delay
+            DispatchCourseCompletedEvent::dispatch($enrollment->user, $enrollment->course)
+                ->delay(now()->addSeconds(6));
+        }
+    }
+    
+    /**
+     * Check if module is completed after lesson completion
+     */
+    protected function checkModuleCompletion(Module $module, $user, Enrollment $enrollment)
+    {
+        // Get total lessons in this module
+        $totalLessons = $module->lessons()->count();
+        
+        if ($totalLessons === 0) {
+            return;
+        }
+        
+        // Get completed lessons in this module
+        $completedLessons = LessonCompletion::where('user_id', $user->id)
+            ->where('enrollment_id', $enrollment->id)
+            ->where('status', 'completed')
+            ->whereHas('lesson', function($query) use ($module) {
+                $query->where('module_id', $module->id);
+            })
+            ->count();
+        
+        // If all lessons in module are completed, trigger notification with 3 second delay
+        if ($completedLessons >= $totalLessons) {
+            DispatchModuleCompletedEvent::dispatch($user, $module, $enrollment->course)
+                ->delay(now()->addSeconds(3));
         }
     }
 }
